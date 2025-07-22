@@ -1,7 +1,7 @@
 /**
  * 問題生成のユーティリティ関数
  */
-import { binaryToIp, ipToBinary, cidrToSubnetMask, subnetMaskToCidr, isValidIpAddress } from './ip-utils'
+import { ipToBinary, cidrToSubnetMask, subnetMaskToCidr, isValidIpAddress } from './ip-utils'
 import { calculateNetworkAddress, calculateBroadcastAddress, calculateHostCount } from './subnet-utils'
 
 export enum QuestionType {
@@ -133,34 +133,18 @@ function generateWrongChoices(correctAnswer: string, type: 'ip' | 'binary' | 'nu
 export function generateQuizQuestion(type: QuestionType): QuizQuestion {
   switch (type) {
     case QuestionType.BINARY_IP_CONVERSION: {
-      // どちらの方向かランダムで決定
-      const direction = Math.random() < 0.5 ? 'BINARY_TO_IP' : 'IP_TO_BINARY'
-      if (direction === 'BINARY_TO_IP') {
-        const ip = generateRandomIpAddress()
-        const binary = ipToBinary(ip)
-        const wrongChoices = generateWrongChoices(ip, 'ip')
-        const allChoices = shuffleArray([ip, ...wrongChoices])
-        const correctAnswer = allChoices.indexOf(ip)
-        return {
-          type,
-          question: `2進数表記 ${binary} をIPアドレスに変換してください`,
-          choices: allChoices,
-          correctAnswer,
-          explanation: `${binary} のIPアドレスは ${ip} です`
-        }
-      } else {
-        const ip = generateRandomIpAddress()
-        const binary = ipToBinary(ip)
-        const wrongChoices = generateWrongChoices(binary, 'binary')
-        const allChoices = shuffleArray([binary, ...wrongChoices])
-        const correctAnswer = allChoices.indexOf(binary)
-        return {
-          type,
-          question: `IPアドレス ${ip} を2進数表記に変換してください`,
-          choices: allChoices,
-          correctAnswer,
-          explanation: `${ip} の2進数表記は ${binary} です`
-        }
+      // IP → 二進数変換のみ
+      const ip = generateRandomIpAddress()
+      const binary = ipToBinary(ip)
+      const wrongChoices = generateWrongChoices(binary, 'binary')
+      const allChoices = shuffleArray([binary, ...wrongChoices])
+      const correctAnswer = allChoices.indexOf(binary)
+      return {
+        type,
+        question: `IPアドレス ${ip} を2進数表記に変換してください`,
+        choices: allChoices,
+        correctAnswer,
+        explanation: `${ip} の2進数表記は ${binary} です`
       }
     }
     
@@ -277,67 +261,6 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         correctAnswer,
         explanation: `${validHost} は ネットワーク ${networkAddress}/${cidr} に属する有効なホストアドレスです。ネットワークアドレス(${networkAddress})とブロードキャストアドレス(${broadcastAddress})は使用できません。`
       };
-    }
-
-    case QuestionType.BINARY_IP_CONVERSION: {
-      // ランダムに双方向変換を選択（0: IP→2進数、1: 2進数→IP）
-      const conversionDirection = Math.floor(Math.random() * 2);
-      
-      if (conversionDirection === 0) {
-        // IP → 2進数変換
-        const ip = generateRandomIpAddress();
-        const binaryResult = ipToBinary(ip);
-        
-        // 選択肢生成（正解 + 間違い）
-        const wrongChoices = Array.from(new Set([
-          binaryResult.split('.').map((byte: string, index: number) => 
-            index === 0 ? (parseInt(byte, 2) ^ 1).toString(2).padStart(8, '0') + '.' + binaryResult.split('.').slice(1).join('.')
-            : binaryResult.split('.').slice(0, index).join('.') + '.' + (parseInt(byte, 2) ^ 1).toString(2).padStart(8, '0') + '.' + binaryResult.split('.').slice(index + 1).join('.')
-          ).join('.'),
-          binaryResult.split('.').map((byte: string) => 
-            (parseInt(byte, 2) ^ 128).toString(2).padStart(8, '0')
-          ).join('.'),
-          binaryResult.split('.').map((byte: string) => 
-            (parseInt(byte, 2) ^ 64).toString(2).padStart(8, '0')
-          ).join('.')
-        ])).slice(0, 3);
-        
-        const allChoices = shuffleArray([binaryResult, ...wrongChoices]);
-        const correctAnswer = allChoices.indexOf(binaryResult);
-        
-        return {
-          question: `IPアドレス ${ip} を2進数で表現してください`,
-          choices: allChoices,
-          correctAnswer,
-          type: QuestionType.BINARY_IP_CONVERSION,
-          explanation: `${ip}を2進数で表現すると${binaryResult}です。`
-        };
-      } else {
-        // 2進数 → IP変換
-        const ip = generateRandomIpAddress();
-        const binaryResult = ipToBinary(ip);
-        
-        // 選択肢生成（正解 + 間違い）
-        const wrongChoices = Array.from(new Set([
-          ip.split('.').map((octet: string, index: number) => 
-            index === 0 ? (parseInt(octet) ^ 1).toString() + '.' + ip.split('.').slice(1).join('.')
-            : ip.split('.').slice(0, index).join('.') + '.' + (parseInt(octet) ^ 1).toString() + '.' + ip.split('.').slice(index + 1).join('.')
-          ).join('.'),
-          ip.split('.').map((octet: string) => (parseInt(octet) ^ 128).toString()).join('.'),
-          ip.split('.').map((octet: string) => (parseInt(octet) ^ 64).toString()).join('.')
-        ].filter(choice => isValidIpAddress(choice)))).slice(0, 3);
-        
-        const allChoices = shuffleArray([ip, ...wrongChoices]);
-        const correctAnswer = allChoices.indexOf(ip);
-        
-        return {
-          question: `2進数 ${binaryResult} を10進数のIPアドレスで表現してください`,
-          choices: allChoices,
-          correctAnswer,
-          type: QuestionType.BINARY_IP_CONVERSION,
-          explanation: `${binaryResult}を10進数で表現すると${ip}です。`
-        };
-      }
     }
     
     default:

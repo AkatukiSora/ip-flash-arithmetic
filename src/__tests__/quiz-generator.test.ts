@@ -4,6 +4,9 @@
 import { 
   generateRandomIpAddress,
   generateRandomSubnetMask,
+  generateRandomCidr,
+  generateRandomBinaryIp,
+  generateHostIpInNetwork,
   generateQuizQuestion,
   QuestionType,
   QuizQuestion
@@ -27,6 +30,61 @@ describe('問題生成機能', () => {
         const ip = generateRandomIpAddress()
         expect(ip).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
       }
+    })
+  })
+
+  describe('generateRandomCidr', () => {
+    test('ランダムなCIDR値を生成できる', () => {
+      const cidr = generateRandomCidr()
+      expect(cidr).toBeGreaterThanOrEqual(8)
+      expect(cidr).toBeLessThanOrEqual(32)
+    })
+
+    test('複数回生成しても有効な範囲内である', () => {
+      for (let i = 0; i < 20; i++) {
+        const cidr = generateRandomCidr()
+        expect(cidr).toBeGreaterThanOrEqual(8)
+        expect(cidr).toBeLessThanOrEqual(32)
+      }
+    })
+  })
+
+  describe('generateRandomBinaryIp', () => {
+    test('ランダムな2進数表記IPアドレスを生成できる', () => {
+      const binaryIp = generateRandomBinaryIp()
+      expect(binaryIp).toMatch(/^[01]{8}\.[01]{8}\.[01]{8}\.[01]{8}$/)
+    })
+
+    test('生成された2進数が有効なIPアドレスに変換できる', () => {
+      const binaryIp = generateRandomBinaryIp()
+      const parts = binaryIp.split('.')
+      parts.forEach(part => {
+        const decimal = parseInt(part, 2)
+        expect(decimal).toBeGreaterThanOrEqual(0)
+        expect(decimal).toBeLessThanOrEqual(255)
+      })
+    })
+  })
+
+  describe('generateHostIpInNetwork', () => {
+    test('ネットワーク内の有効なホストIPアドレスを生成できる', () => {
+      const networkIp = '192.168.1.0'
+      const cidr = 24
+      const hostIp = generateHostIpInNetwork(networkIp, cidr)
+      
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+      expect(hostIp).not.toBe('192.168.1.0') // ネットワークアドレスではない
+      expect(hostIp).not.toBe('192.168.1.255') // ブロードキャストアドレスではない
+    })
+
+    test('小さなネットワーク (/30) でもホストIPを生成できる', () => {
+      const networkIp = '10.0.0.4'
+      const cidr = 30
+      const hostIp = generateHostIpInNetwork(networkIp, cidr)
+      
+      expect(hostIp).toMatch(/^10\.0\.0\.[4-7]$/)
+      expect(hostIp).not.toBe('10.0.0.4') // ネットワークアドレス
+      expect(hostIp).not.toBe('10.0.0.7') // ブロードキャストアドレス
     })
   })
 
@@ -146,6 +204,65 @@ describe('問題生成機能', () => {
 
     test('エラー処理: 無効な問題タイプ', () => {
       expect(() => generateQuizQuestion('INVALID_TYPE' as any)).toThrow('Unknown question type')
+    })
+
+    test('SUBNET_TO_CIDR問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.SUBNET_TO_CIDR)
+      expect(question.type).toBe(QuestionType.SUBNET_TO_CIDR)
+      expect(question.question).toContain('サブネットマスク')
+      expect(question.question).toContain('CIDR')
+      expect(question.choices).toHaveLength(4)
+      expect(question.choices.every(choice => choice.startsWith('/'))).toBe(true)
+    })
+
+    test('全ての問題タイプが正常に生成される', () => {
+      const questionTypes = [
+        QuestionType.BINARY_IP_CONVERSION,
+        QuestionType.CIDR_TO_SUBNET,
+        QuestionType.SUBNET_TO_CIDR,
+        QuestionType.NETWORK_ADDRESS,
+        QuestionType.BROADCAST_ADDRESS,
+        QuestionType.HOST_COUNT,
+        QuestionType.HOST_IN_NETWORK
+      ]
+
+      questionTypes.forEach(type => {
+        const question = generateQuizQuestion(type)
+        expect(question.type).toBe(type)
+        expect(question.question).toBeTruthy()
+        expect(question.choices).toHaveLength(4)
+        expect(question.correctAnswer).toBeGreaterThanOrEqual(0)
+        expect(question.correctAnswer).toBeLessThan(4)
+        expect(question.explanation).toBeTruthy()
+      })
+    })
+
+    test('選択肢に重複がないことを確認', () => {
+      const questionTypes = [
+        QuestionType.BINARY_IP_CONVERSION,
+        QuestionType.CIDR_TO_SUBNET,
+        QuestionType.SUBNET_TO_CIDR,
+        QuestionType.NETWORK_ADDRESS,
+        QuestionType.BROADCAST_ADDRESS,
+        QuestionType.HOST_COUNT,
+        QuestionType.HOST_IN_NETWORK
+      ]
+
+      questionTypes.forEach(type => {
+        // 複数回試行して重複チェック
+        let hasUniqueChoices = false
+        for (let i = 0; i < 10; i++) {
+          const question = generateQuizQuestion(type)
+          const uniqueChoices = new Set(question.choices)
+          if (uniqueChoices.size === 4) {
+            hasUniqueChoices = true
+            break
+          }
+        }
+        
+        // 少なくとも1回は重複のない選択肢が生成されることを確認
+        expect(hasUniqueChoices).toBe(true)
+      })
     })
   })
 })

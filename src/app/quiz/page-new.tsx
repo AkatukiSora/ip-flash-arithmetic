@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { generateQuizQuestion, QuestionType, type QuizQuestion } from '@/utils/quiz-generator'
 
 const QUESTION_TYPES = [
-  { type: QuestionType.BINARY_IP_CONVERSION, label: 'IP→2進数変換' },
+  { type: QuestionType.BINARY_IP_CONVERSION, label: '2進数⇄IP変換' },
   { type: QuestionType.CIDR_TO_SUBNET, label: 'CIDR→サブネット' },
   { type: QuestionType.SUBNET_TO_CIDR, label: 'サブネット→CIDR' },
   { type: QuestionType.NETWORK_ADDRESS, label: 'ネットワークアドレス' },
@@ -15,26 +15,6 @@ const QUESTION_TYPES = [
 ]
 
 type GameMode = 'setup' | 'playing' | 'finished'
-
-// 長いテキスト（二進数など）を適切に表示するためのヘルパー関数
-const formatLongText = (text: string): React.ReactElement => {
-  // 二進数表記の場合（ピリオドで区切られた8桁の数字）
-  if (text.includes('.') && text.split('.').every(part => /^[01]{1,8}$/.test(part))) {
-    const parts = text.split('.')
-    return (
-      <span className="block break-words">
-        {parts.map((part, index) => (
-          <span key={index}>
-            {part}
-            {index < parts.length - 1 && <span className="text-gray-400">.</span>}
-            {(index + 1) % 2 === 0 && index < parts.length - 1 && <br />}
-          </span>
-        ))}
-      </span>
-    )
-  }
-  return <span>{text}</span>
-}
 
 export default function QuizPage() {
   // ゲーム状態
@@ -166,7 +146,7 @@ export default function QuizPage() {
   // セットアップ画面
   if (gameMode === 'setup') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900 p-4">
         <div className="max-w-md mx-auto">
           <header className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -236,7 +216,7 @@ export default function QuizPage() {
   // クイズ実行中の画面
   if (gameMode === 'playing' && currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900 p-4">
         <div className="max-w-md mx-auto">
           <header className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -302,8 +282,8 @@ export default function QuizPage() {
                     className={buttonClass}
                     disabled={showAnswer}
                   >
-                    <div className={`font-mono ${choice.includes('.') && choice.split('.').some(part => part.length > 3) ? 'text-xs' : 'text-sm'}`}>
-                      {String.fromCharCode(65 + index)}. {formatLongText(choice)}
+                    <div className="font-mono text-sm">
+                      {String.fromCharCode(65 + index)}. {choice}
                     </div>
                   </button>
                 )
@@ -347,160 +327,9 @@ export default function QuizPage() {
     )
   }
 
-  // 結果表示画面
-  if (gameMode === 'finished') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-4">
-        <div className="max-w-md mx-auto">
-          <header className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <button 
-                onClick={resetToSetup}
-                className="text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2"
-              >
-                ← 最初から
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">クイズ結果</h1>
-              <Link 
-                href="/"
-                className="text-blue-600 dark:text-blue-400 font-medium"
-              >
-                ホーム
-              </Link>
-            </div>
-          </header>
-
-          {/* 結果表示 */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg dark:shadow-gray-900/30 mb-6 text-center">
-            <div className="mb-4">
-              <div className="text-4xl mb-2">
-                {accuracy >= 80 ? '🎉' : accuracy >= 60 ? '👍' : '📚'}
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                お疲れさまでした！
-              </h2>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {score}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    正解数
-                  </div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {accuracy}%
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    正答率
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-4 text-center">
-                <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                  {score} / {totalQuestions} 問正解
-                </div>
-              </div>
-            </div>
-
-            {/* 評価メッセージ */}
-            <div className="mb-6">
-              <div className="text-gray-600 dark:text-gray-300">
-                {accuracy >= 90 && "素晴らしい！完璧な理解です！"}
-                {accuracy >= 80 && accuracy < 90 && "とても良くできました！"}
-                {accuracy >= 60 && accuracy < 80 && "良い結果です。もう少し練習してみましょう。"}
-                {accuracy < 60 && "練習を重ねて理解を深めましょう。"}
-              </div>
-            </div>
-
-            {/* アクションボタン */}
-            <div className="space-y-3">
-              <button
-                onClick={resetToSetup}
-                className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
-              >
-                もう一度挑戦する
-              </button>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <Link 
-                  href="/practice"
-                  className="bg-green-600 dark:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 dark:hover:bg-green-800 transition-colors text-center"
-                >
-                  練習モード
-                </Link>
-                <Link 
-                  href="/calculator"
-                  className="bg-orange-600 dark:bg-orange-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-orange-700 dark:hover:bg-orange-800 transition-colors text-center"
-                >
-                  計算機
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* スコア保存ダイアログ */}
-          {showScoreDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 text-center">
-                  スコアを保存
-                </h3>
-                
-                <div className="text-center mb-4">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                    {score}点 / {totalQuestions}問
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    正答率: {accuracy}%
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    ニックネーム（ランキング表示用）
-                  </label>
-                  <input
-                    type="text"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="ニックネームを入力"
-                    maxLength={20}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowScoreDialog(false)}
-                    className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={saveScore}
-                    disabled={!nickname.trim()}
-                    className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
   // 読み込み中
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900 p-4">
       <div className="max-w-md mx-auto">
         <div className="text-center text-gray-800 dark:text-gray-100">読み込み中...</div>
       </div>

@@ -68,8 +68,13 @@ export function calculateMinHostAddress(networkAddress: string): string {
   
   const parts = networkAddress.split('.').map(part => parseInt(part, 10))
   
-  // 最後のオクテットに1を加算
-  parts[3] += 1
+  // 最後のオクテットに1を加算、ただし255を超えないように
+  if (parts[3] + 1 <= 255) {
+    parts[3] += 1
+  } else {
+    // /32の場合などでホストアドレスが存在しない場合
+    throw new Error('No host addresses available in this network')
+  }
   
   return parts.join('.')
 }
@@ -84,8 +89,13 @@ export function calculateMaxHostAddress(broadcastAddress: string): string {
   
   const parts = broadcastAddress.split('.').map(part => parseInt(part, 10))
   
-  // 最後のオクテットから1を減算
-  parts[3] -= 1
+  // 最後のオクテットから1を減算、ただし0未満にならないように
+  if (parts[3] - 1 >= 0) {
+    parts[3] -= 1
+  } else {
+    // /32の場合などでホストアドレスが存在しない場合
+    throw new Error('No host addresses available in this network')
+  }
   
   return parts.join('.')
 }

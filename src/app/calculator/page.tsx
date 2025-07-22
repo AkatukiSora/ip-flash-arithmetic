@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { 
   isValidIpAddress, 
   binaryToIp, 
+  ipToBinary,
   cidrToSubnetMask,
   subnetMaskToCidr 
 } from '@/utils/ip-utils'
@@ -46,6 +47,14 @@ export default function CalculatorPage() {
     }
   }
 
+  const handleIpToBinary = () => {
+    try {
+      setBinaryInput(ipToBinary(ipInput))
+    } catch (error) {
+      alert('無効なIPアドレス形式です')
+    }
+  }
+
   const handleCidrToSubnet = () => {
     try {
       const cidr = parseInt(cidrInput, 10)
@@ -78,9 +87,22 @@ export default function CalculatorPage() {
 
       const network = calculateNetworkAddress(subnetIp, cidr)
       const broadcast = calculateBroadcastAddress(subnetIp, cidr)
-      const minHost = calculateMinHostAddress(network)
-      const maxHost = calculateMaxHostAddress(broadcast)
       const hostCount = calculateHostCount(cidr)
+      
+      let minHost: string = 'なし'
+      let maxHost: string = 'なし'
+      
+      // /32の場合はホストアドレスが存在しない
+      if (cidr < 32) {
+        try {
+          minHost = calculateMinHostAddress(network)
+          maxHost = calculateMaxHostAddress(broadcast)
+        } catch (error) {
+          // /31や/32の場合はホストアドレスが存在しない
+          minHost = 'なし'
+          maxHost = 'なし'
+        }
+      }
 
       setSubnetResults({
         network,
@@ -95,7 +117,7 @@ export default function CalculatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 dark:from-gray-900 dark:to-orange-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 dark:from-gray-900 dark:to-indigo-900 p-4">
       <div className="max-w-md mx-auto">
         {/* ヘッダー */}
         <header className="mb-6">
@@ -137,22 +159,31 @@ export default function CalculatorPage() {
 
         {mode === 'converter' ? (
           <div className="space-y-6">
-            {/* Binary to IP */}
+            {/* IP ⇄ 2進数変換 */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow dark:shadow-gray-900/30">
-              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">2進数 → IP変換</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">IP ⇄ 2進数変換</h3>
               
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     2進数表記
                   </label>
-                  <input
-                    type="text"
-                    value={binaryInput}
-                    onChange={(e) => setBinaryInput(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm"
-                    placeholder="11000000.10101000.00000001.00000001"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={binaryInput}
+                      onChange={(e) => setBinaryInput(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-xs overflow-x-auto"
+                      placeholder="11000000.10101000.00000001.00000001"
+                    />
+                    <button
+                      onClick={handleBinaryToIp}
+                      className="px-4 py-2 bg-orange-500 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors"
+                      title="2進数 → IP"
+                    >
+                      ↓
+                    </button>
+                  </div>
                 </div>
                 
                 <div>
@@ -166,13 +197,13 @@ export default function CalculatorPage() {
                       onChange={(e) => setIpInput(e.target.value)}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="192.168.1.1"
-                      readOnly
                     />
                     <button
-                      onClick={handleBinaryToIp}
+                      onClick={handleIpToBinary}
                       className="px-4 py-2 bg-orange-500 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors"
+                      title="IP → 2進数"
                     >
-                      変換
+                      ↑
                     </button>
                   </div>
                 </div>
