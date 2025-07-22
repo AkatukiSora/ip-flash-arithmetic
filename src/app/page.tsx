@@ -1,103 +1,62 @@
-import Image from "next/image";
+'use client'
+
+import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-4">
+      <div className="max-w-md mx-auto">
+        {/* ヘッダー */}
+        <header className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+            IP Flush Arithmetic
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
+            IPアドレス計算の練習アプリ
+          </p>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* ナビゲーション */}
+        <nav className="mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-gray-900/30 p-4">
+            <div className="grid grid-cols-1 gap-3">
+              <Link 
+                href="/quiz"
+                className="bg-orange-500 dark:bg-orange-600 text-white p-4 rounded-lg text-center font-semibold hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors"
+              >
+                🧠 クイズ
+              </Link>
+              
+              <Link 
+                href="/practice"
+                className="bg-green-500 dark:bg-green-600 text-white p-4 rounded-lg text-center font-semibold hover:bg-green-600 dark:hover:bg-green-700 transition-colors"
+              >
+                📚 練習
+              </Link>
+              
+              <Link 
+                href="/calculator"
+                className="bg-blue-500 dark:bg-blue-600 text-white p-4 rounded-lg text-center font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+              >
+                🧮 計算機
+              </Link>
+            </div>
+          </div>
+        </nav>
+
+        {/* アプリの説明 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg dark:shadow-gray-900/30 text-center text-gray-600 dark:text-gray-300 text-sm">
+          <p className="mb-2">
+            IPアドレス計算、サブネット計算、CIDR記法の変換など、<br/>
+            ネットワーク技術に必要な基礎計算を楽しく学習できます。
+          </p>
+          <p>
+            🎯 クイズでスコアに挑戦<br/>
+            📚 練習で反復学習<br/>
+            🧮 計算機で検証
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
-  );
+  )
 }
