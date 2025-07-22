@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IP Flush Arithmetic",
-  description: "IP address arithmetic learning application",
+  title: "IPアドレス演算",
+  description: "IPアドレス演算学習アプリケーション",
 };
 
 export default function RootLayout({

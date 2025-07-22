@@ -270,7 +270,7 @@ export default function PracticePage() {
                 <div className={`text-center font-bold text-lg mb-4 ${
                   selectedAnswer === currentQuestion.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
-                  {selectedAnswer === currentQuestion.correctAnswer ? '🎉 正解！' : '📚 学習しよう'}
+                  {selectedAnswer === currentQuestion.correctAnswer ? '🎉 正解！' : '😭 惜しい'}
                 </div>
                 
                 {currentQuestion.explanation && (
