@@ -49,10 +49,6 @@ export default function QuizPage() {
   const [score, setScore] = useState(0)
   const [questionCount, setQuestionCount] = useState(0)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
-  
-  // 結果表示用
-  const [showScoreDialog, setShowScoreDialog] = useState(false)
-  const [nickname, setNickname] = useState('')
 
   const generateNewQuestion = () => {
     if (selectedTypes.length === 0) return
@@ -112,7 +108,6 @@ export default function QuizPage() {
     setGameMode('playing')
     setScore(0)
     setQuestionCount(0)
-    setShowScoreDialog(false)
     generateNewQuestion()
   }
 
@@ -122,43 +117,10 @@ export default function QuizPage() {
     setScore(0)
     setQuestionCount(0)
     setCurrentQuestion(null)
-    setShowScoreDialog(false)
   }
 
   const finishGame = () => {
     setGameMode('finished')
-    if (questionCount >= 5) {
-      setShowScoreDialog(true)
-    }
-  }
-
-  const saveScore = async () => {
-    if (!nickname.trim()) return
-
-    try {
-      const response = await fetch('/api/scores', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nickname: nickname.trim(),
-          score,
-          accuracy,
-          totalQuestions: questionCount,
-        }),
-      })
-
-      if (response.ok) {
-        setShowScoreDialog(false)
-        window.location.href = '/ranking'
-      } else {
-        alert('スコアの保存に失敗しました')
-      }
-    } catch (error) {
-      console.error('Error saving score:', error)
-      alert('スコアの保存に失敗しました')
-    }
   }
 
   const accuracy = questionCount > 0 ? Math.round((score / questionCount) * 100) : 0
@@ -443,56 +405,6 @@ export default function QuizPage() {
               </div>
             </div>
           </div>
-
-          {/* スコア保存ダイアログ */}
-          {showScoreDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 text-center">
-                  スコアを保存
-                </h3>
-                
-                <div className="text-center mb-4">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                    {score}点 / {totalQuestions}問
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    正答率: {accuracy}%
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    ニックネーム（ランキング表示用）
-                  </label>
-                  <input
-                    type="text"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="ニックネームを入力"
-                    maxLength={20}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowScoreDialog(false)}
-                    className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={saveScore}
-                    disabled={!nickname.trim()}
-                    className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     )
