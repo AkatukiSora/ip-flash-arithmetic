@@ -1,7 +1,7 @@
 /**
  * 問題生成のユーティリティ関数
  */
-import { ipToBinary, cidrToSubnetMask, subnetMaskToCidr, isValidIpAddress } from './ip-utils'
+import { ipToBinary, cidrToSubnetMask } from './ip-utils'
 import { calculateNetworkAddress, calculateBroadcastAddress, calculateHostCount } from './subnet-utils'
 
 export enum QuestionType {

@@ -3,9 +3,7 @@
  */
 import { 
   generateQuizQuestion, 
-  QuestionType, 
-  generateRandomIpAddress,
-  generateRandomCidr
+  QuestionType
 } from '../utils/quiz-generator'
 import { 
   calculateNetworkAddress, 
@@ -122,7 +120,7 @@ describe('統合テスト', () => {
       expect(() => cidrToSubnetMask(33)).toThrow()
       
       // 無効な問題タイプ
-      expect(() => generateQuizQuestion('INVALID_TYPE' as any)).toThrow()
+      expect(() => generateQuizQuestion('INVALID_TYPE' as QuestionType)).toThrow()
     })
 
     test('境界値で正常に動作する', () => {

@@ -42,7 +42,7 @@ export default function CalculatorPage() {
   const handleBinaryToIp = () => {
     try {
       setIpInput(binaryToIp(binaryInput))
-    } catch (error) {
+    } catch {
       alert('無効な2進数形式です')
     }
   }
@@ -50,7 +50,7 @@ export default function CalculatorPage() {
   const handleIpToBinary = () => {
     try {
       setBinaryInput(ipToBinary(ipInput))
-    } catch (error) {
+    } catch {
       alert('無効なIPアドレス形式です')
     }
   }
@@ -59,7 +59,7 @@ export default function CalculatorPage() {
     try {
       const cidr = parseInt(cidrInput, 10)
       setSubnetInput(cidrToSubnetMask(cidr))
-    } catch (error) {
+    } catch {
       alert('無効なCIDR値です')
     }
   }
@@ -67,7 +67,7 @@ export default function CalculatorPage() {
   const handleSubnetToCidr = () => {
     try {
       setCidrInput(subnetMaskToCidr(subnetInput).toString())
-    } catch (error) {
+    } catch {
       alert('無効なサブネットマスクです')
     }
   }
@@ -97,7 +97,7 @@ export default function CalculatorPage() {
         try {
           minHost = calculateMinHostAddress(network)
           maxHost = calculateMaxHostAddress(broadcast)
-        } catch (error) {
+        } catch {
           // /31や/32の場合はホストアドレスが存在しない
           minHost = 'なし'
           maxHost = 'なし'
@@ -111,7 +111,7 @@ export default function CalculatorPage() {
         maxHost,
         hostCount
       })
-    } catch (error) {
+    } catch {
       alert('計算エラーが発生しました')
     }
   }

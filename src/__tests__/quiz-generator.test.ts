@@ -8,8 +8,7 @@ import {
   generateRandomBinaryIp,
   generateHostIpInNetwork,
   generateQuizQuestion,
-  QuestionType,
-  QuizQuestion
+  QuestionType
 } from '../utils/quiz-generator'
 
 describe('問題生成機能', () => {
@@ -203,7 +202,7 @@ describe('問題生成機能', () => {
     })
 
     test('エラー処理: 無効な問題タイプ', () => {
-      expect(() => generateQuizQuestion('INVALID_TYPE' as any)).toThrow('Unknown question type')
+      expect(() => generateQuizQuestion('INVALID_TYPE' as QuestionType)).toThrow('Unknown question type')
     })
 
     test('SUBNET_TO_CIDR問題を生成できる', () => {
