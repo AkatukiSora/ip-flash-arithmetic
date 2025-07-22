@@ -216,7 +216,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
       let attempts = 0
       
       while (wrongChoices.length < 3 && attempts < 100) {
-        let wrongCidr = generateRandomCidr()
+        const wrongCidr = generateRandomCidr()
         const wrongCidrStr = `/${wrongCidr}`
         if (wrongCidr !== cidr && !wrongChoices.includes(wrongCidrStr)) {
           wrongChoices.push(wrongCidrStr)
