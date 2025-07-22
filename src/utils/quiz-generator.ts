@@ -68,6 +68,8 @@ export function generateHostIpInNetwork(networkIp: string, cidr: number): string
   // ネットワークアドレスとブロードキャストアドレスの間でランダムなIPを生成
   let hostIp: string
   let attempts = 0
+  const maxAttempts = 1000
+  
   do {
     const hostParts = networkParts.map((part, index) => {
       const range = broadcastParts[index] - part
@@ -76,7 +78,21 @@ export function generateHostIpInNetwork(networkIp: string, cidr: number): string
     })
     hostIp = hostParts.join('.')
     attempts++
-  } while ((hostIp === networkAddress || hostIp === broadcastAddress) && attempts < 100)
+    
+    // 無限ループを防ぐため、十分な試行回数に達したらフォールバック
+    if (attempts >= maxAttempts) {
+      // 最後のオクテットを1つ増やしてみる（ブロードキャストアドレスでない限り）
+      const fallbackParts = [...networkParts]
+      if (fallbackParts[3] < broadcastParts[3] - 1) {
+        fallbackParts[3] = fallbackParts[3] + 1
+      } else if (fallbackParts[2] < broadcastParts[2]) {
+        fallbackParts[2] = fallbackParts[2] + 1
+        fallbackParts[3] = 0
+      }
+      hostIp = fallbackParts.join('.')
+      break
+    }
+  } while ((hostIp === networkAddress || hostIp === broadcastAddress) && attempts < maxAttempts)
   
   return hostIp
 }
@@ -98,9 +114,12 @@ function shuffleArray<T>(array: T[]): T[] {
  */
 function generateWrongChoices(correctAnswer: string, type: 'ip' | 'binary' | 'number'): string[] {
   const wrongChoices: string[] = []
+  let attempts = 0
+  const maxAttempts = 100 // 無限ループを防ぐ
   
-  while (wrongChoices.length < 3) {
+  while (wrongChoices.length < 3 && attempts < maxAttempts) {
     let wrongChoice: string
+    attempts++
     
     switch (type) {
       case 'ip':
@@ -122,6 +141,12 @@ function generateWrongChoices(correctAnswer: string, type: 'ip' | 'binary' | 'nu
     if (wrongChoice !== correctAnswer && !wrongChoices.includes(wrongChoice)) {
       wrongChoices.push(wrongChoice)
     }
+  }
+  
+  // 必要な数の選択肢が生成できなかった場合のフォールバック
+  while (wrongChoices.length < 3) {
+    const fallbackChoice = `fallback-${wrongChoices.length}-${Date.now()}`
+    wrongChoices.push(fallbackChoice)
   }
   
   return wrongChoices
@@ -151,7 +176,27 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
     case QuestionType.CIDR_TO_SUBNET: {
       const cidr = generateRandomCidr()
       const subnet = cidrToSubnetMask(cidr)
-      const wrongChoices = [generateRandomSubnetMask(), generateRandomSubnetMask(), generateRandomSubnetMask()]
+      const wrongChoices: string[] = []
+      let attempts = 0
+      
+      // 重複しない間違い選択肢を生成
+      while (wrongChoices.length < 3 && attempts < 100) {
+        const wrongSubnet = generateRandomSubnetMask()
+        if (wrongSubnet !== subnet && !wrongChoices.includes(wrongSubnet)) {
+          wrongChoices.push(wrongSubnet)
+        }
+        attempts++
+      }
+      
+      // フォールバック: 十分な選択肢が生成できない場合
+      while (wrongChoices.length < 3) {
+        const fallbackCidr = generateRandomCidr()
+        const fallbackSubnet = cidrToSubnetMask(fallbackCidr)
+        if (fallbackSubnet !== subnet && !wrongChoices.includes(fallbackSubnet)) {
+          wrongChoices.push(fallbackSubnet)
+        }
+      }
+      
       const allChoices = shuffleArray([subnet, ...wrongChoices])
       const correctAnswer = allChoices.indexOf(subnet)
       
@@ -167,13 +212,18 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
     case QuestionType.SUBNET_TO_CIDR: {
       const cidr = generateRandomCidr()
       const subnet = cidrToSubnetMask(cidr)
-      const wrongChoices = Array.from({ length: 3 }, () => {
+      const wrongChoices: string[] = []
+      let attempts = 0
+      
+      while (wrongChoices.length < 3 && attempts < 100) {
         let wrongCidr = generateRandomCidr()
-        while (wrongCidr === cidr) {
-          wrongCidr = generateRandomCidr()
+        const wrongCidrStr = `/${wrongCidr}`
+        if (wrongCidr !== cidr && !wrongChoices.includes(wrongCidrStr)) {
+          wrongChoices.push(wrongCidrStr)
         }
-        return `/${wrongCidr}`
-      })
+        attempts++
+      }
+      
       const allChoices = shuffleArray([`/${cidr}`, ...wrongChoices])
       const correctAnswer = allChoices.indexOf(`/${cidr}`)
       
@@ -245,11 +295,17 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
       
       // 正解は有効なホストアドレス
       // 間違いの選択肢：ネットワークアドレス、ブロードキャストアドレス、他のネットワークのIP
-      const wrongChoices = [
-        networkAddress,
-        broadcastAddress,
-        generateRandomIpAddress()
-      ]
+      const wrongChoices: string[] = [networkAddress, broadcastAddress]
+      let attempts = 0
+      
+      // 3つ目の間違い選択肢を生成（正解と重複しないように）
+      while (wrongChoices.length < 3 && attempts < 100) {
+        const randomIp = generateRandomIpAddress()
+        if (randomIp !== validHost && !wrongChoices.includes(randomIp)) {
+          wrongChoices.push(randomIp)
+        }
+        attempts++
+      }
       
       const allChoices = shuffleArray([validHost, ...wrongChoices])
       const correctAnswer = allChoices.indexOf(validHost)
