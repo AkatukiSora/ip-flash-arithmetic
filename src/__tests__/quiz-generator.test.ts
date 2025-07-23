@@ -297,7 +297,8 @@ describe('問題生成機能', () => {
       expect(question.choices).toHaveLength(4)
       expect(question.choices.every(choice => choice.includes('/'))).toBe(true)
       expect(question.explanation).toContain('💡 ルーティング判定結果')
-      expect(question.explanation).toContain('📍 ロンゲストマッチ')
+      // デフォルトルートの場合は「📍 判定理由：」、通常の場合は「📍 ロンゲストマッチ」
+      expect(question.explanation).toMatch(/📍 (ロンゲストマッチ|判定理由：)/)
     })
 
     test('全ての問題タイプが正常に生成される', () => {
@@ -436,7 +437,8 @@ describe('問題生成機能', () => {
     })
 
     test('ロンゲストマッチ問題で紛らわしい選択肢が生成される', () => {
-      for (let i = 0; i < 10; i++) {
+      // より厳密にテストするため実行回数を増やす
+      for (let i = 0; i < 20; i++) {
         const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
         
         // 選択肢の中に、似ているネットワークアドレスが含まれることを確認

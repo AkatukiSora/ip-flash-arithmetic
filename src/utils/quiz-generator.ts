@@ -39,11 +39,46 @@ function generateLongestMatchNetworks(targetIp: string): {
     
     if (shouldDefaultRouteBeCorrect) {
       // デフォルトルートが正解の場合：他の選択肢はすべてマッチしないネットワーク
-      for (let i = 0; i < 3; i++) {
+      // 重複チェック付きで選択肢を生成
+      let attempts = 0
+      const maxAttempts = 100
+      
+      while (otherNetworks.length < 3 && attempts < maxAttempts) {
         const randomCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
         const nonMatchingNetwork = generateNonMatchingButSimilarNetwork(targetIp, randomCidr)
-        otherNetworks.push({ network: nonMatchingNetwork, cidr: randomCidr })
+        
+        // 重複チェック（デフォルトルートとの重複も含む）
+        const isDuplicate = otherNetworks.some(entry => 
+          entry.network === nonMatchingNetwork && entry.cidr === randomCidr
+        ) || (nonMatchingNetwork === '0.0.0.0' && randomCidr === 0)
+        
+        if (!isDuplicate) {
+          otherNetworks.push({ network: nonMatchingNetwork, cidr: randomCidr })
+        }
+        
+        attempts++
       }
+      
+      // 必要な選択肢数が足りない場合の最終フォールバック
+      while (otherNetworks.length < 3) {
+        const fallbackCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
+        const randomIp = generateRandomIpAddress()
+        const fallbackNetwork = calculateNetworkAddress(randomIp, fallbackCidr)
+        
+        const isDuplicate = otherNetworks.some(entry => 
+          entry.network === fallbackNetwork && entry.cidr === fallbackCidr
+        ) || (fallbackNetwork === '0.0.0.0' && fallbackCidr === 0)
+        
+        if (!isDuplicate) {
+          otherNetworks.push({ network: fallbackNetwork, cidr: fallbackCidr })
+        } else {
+          // 強制的にユニークな選択肢を作成
+          const uniqueNetwork = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.0`
+          const uniqueCidr = 24
+          otherNetworks.push({ network: uniqueNetwork, cidr: uniqueCidr })
+        }
+      }
+      
       return {
         correctNetwork: '0.0.0.0',
         correctCidr: 0,
