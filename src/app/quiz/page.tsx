@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { generateQuizQuestion, QuestionType, type QuizQuestion } from '@/utils/quiz-generator'
+import Calculator from '@/components/Calculator'
 
 const QUESTION_TYPES = [
   { type: QuestionType.BINARY_IP_CONVERSION, label: 'IP→2進数変換' },
@@ -48,6 +49,9 @@ export default function QuizPage() {
   const [showAnswer, setShowAnswer] = useState(false)
   const [score, setScore] = useState(0)
   const [questionCount, setQuestionCount] = useState(0)
+  
+  // 計算機ポップアップの状態
+  const [showCalculator, setShowCalculator] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
 
   const generateNewQuestion = () => {
@@ -304,6 +308,39 @@ export default function QuizPage() {
               </div>
             )}
           </div>
+          
+          {/* 計算機ポップアップボタン（右下固定） */}
+          <button
+            onClick={() => setShowCalculator(true)}
+            className="fixed bottom-6 right-6 bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-full shadow-lg transition-colors z-40"
+            title="計算機を開く"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </button>
+
+          {/* 計算機ポップアップモーダル */}
+          {showCalculator && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">計算機</h3>
+                  <button
+                    onClick={() => setShowCalculator(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="h-[70vh]">
+                  <Calculator isPopup={true} />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )

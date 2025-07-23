@@ -90,6 +90,18 @@ describe('サブネット計算機能', () => {
       // /32の場合の動作を正確にテスト
       expect(calculateMaxHostAddress('192.168.1.255')).toBe('192.168.1.254')
     })
+
+    test('エラー処理: ホストアドレスが存在しない場合（最後のオクテットが0）', () => {
+      // 最後のオクテットが0のブロードキャストアドレスからホストアドレスを計算
+      expect(() => calculateMaxHostAddress('192.168.1.0')).toThrow('No host addresses available in this network')
+    })
+  })
+
+  describe('calculateMinHostAddress', () => {
+    test('最小ホストアドレス計算のエラーケース', () => {
+      // ネットワークアドレスの最後のオクテットが255の場合
+      expect(() => calculateMinHostAddress('192.168.1.255')).toThrow('No host addresses available in this network')
+    })
   })
 
   describe('calculateHostCount', () => {
@@ -122,6 +134,8 @@ describe('サブネット計算機能', () => {
 
     test('エラー処理: 無効なサブネットマスク', () => {
       expect(() => calculateHostCount('255.255.255.1')).toThrow('Invalid subnet mask')
+      expect(() => calculateHostCount('invalid')).toThrow('Invalid subnet mask')
+      expect(() => calculateHostCount('256.255.255.0')).toThrow('Invalid subnet mask')
     })
 
     test('エラー処理: 無効なCIDR値', () => {

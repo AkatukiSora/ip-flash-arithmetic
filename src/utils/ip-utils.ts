@@ -15,6 +15,7 @@ export function ipToBinary(ip: string): string {
 
 /**
  * IPアドレスが有効な形式かを検証する
+ * 先頭ゼロを含む形式（例: 192.168.00.005）も許容する
  */
 export function isValidIpAddress(ip: string): boolean {
   const parts = ip.split('.')
@@ -22,7 +23,7 @@ export function isValidIpAddress(ip: string): boolean {
   
   return parts.every(part => {
     const num = parseInt(part, 10)
-    return !isNaN(num) && num >= 0 && num <= 255 && part === num.toString()
+    return !isNaN(num) && num >= 0 && num <= 255
   })
 }
 
