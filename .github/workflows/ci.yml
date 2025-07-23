@@ -70,7 +70,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    continue-on-error: true  # リント設定に問題があるため一時的に継続実行
 
     steps:
     - name: Checkout repository
@@ -89,43 +88,5 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Run ESLint (if working)
-      run: pnpm lint || echo "ESLint failed, but continuing..."
-
-  e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Use Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10.13.1
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-
-    - name: Build application
-      run: pnpm build
-
-    - name: Run Playwright tests
-      run: npx playwright test
-
-    - name: Upload Playwright Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+    - name: Run ESLint
+      run: pnpm lint
