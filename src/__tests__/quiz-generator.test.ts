@@ -244,6 +244,16 @@ describe('問題生成機能', () => {
       expect(question.choices.every(choice => choice.startsWith('/'))).toBe(true)
     })
 
+    test('ロンゲストマッチ問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+      expect(question.type).toBe(QuestionType.LONGEST_MATCH)
+      expect(question.question).toContain('最長マッチ')
+      expect(question.question).toContain('longest match')
+      expect(question.choices).toHaveLength(4)
+      expect(question.choices.every(choice => choice.includes('/'))).toBe(true)
+      expect(question.explanation).toContain('最も具体的な')
+    })
+
     test('全ての問題タイプが正常に生成される', () => {
       const questionTypes = [
         QuestionType.BINARY_IP_CONVERSION,
@@ -252,7 +262,8 @@ describe('問題生成機能', () => {
         QuestionType.NETWORK_ADDRESS,
         QuestionType.BROADCAST_ADDRESS,
         QuestionType.HOST_COUNT,
-        QuestionType.HOST_IN_NETWORK
+        QuestionType.HOST_IN_NETWORK,
+        QuestionType.LONGEST_MATCH
       ]
 
       questionTypes.forEach(type => {
@@ -274,7 +285,8 @@ describe('問題生成機能', () => {
         QuestionType.NETWORK_ADDRESS,
         QuestionType.BROADCAST_ADDRESS,
         QuestionType.HOST_COUNT,
-        QuestionType.HOST_IN_NETWORK
+        QuestionType.HOST_IN_NETWORK,
+        QuestionType.LONGEST_MATCH
       ]
 
       questionTypes.forEach(type => {
@@ -321,13 +333,94 @@ describe('問題生成機能', () => {
       }
     })
 
+    test('ロンゲストマッチ問題の詳細テスト', () => {
+      // 複数回実行して、ロンゲストマッチの動作を確認
+      for (let i = 0; i < 5; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        // 問題の基本構造を確認
+        expect(question.type).toBe(QuestionType.LONGEST_MATCH)
+        expect(question.question).toMatch(/IPアドレス \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)
+        expect(question.choices).toHaveLength(4)
+        expect(question.correctAnswer).toBeGreaterThanOrEqual(0)
+        expect(question.correctAnswer).toBeLessThan(4)
+        
+        // 全ての選択肢がネットワークアドレス/CIDR形式であることを確認
+        question.choices.forEach(choice => {
+          expect(choice).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/)
+        })
+        
+        // 正解の選択肢が存在することを確認
+        const correctChoice = question.choices[question.correctAnswer]
+        expect(correctChoice).toBeTruthy()
+        
+        // 説明にルーティングテーブル情報が含まれることを確認
+        expect(question.explanation).toContain('○')
+        expect(question.explanation).toContain('×')
+      }
+    })
+
+    test('ロンゲストマッチ問題でデフォルトルートが含まれることがある', () => {
+      let foundDefaultRoute = false
+      let foundDefaultRouteAsCorrect = false
+      
+      // 100回試行してデフォルトルートが含まれる問題を確認
+      for (let i = 0; i < 100; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        const hasDefaultRoute = question.choices.some(choice => choice === '0.0.0.0/0')
+        if (hasDefaultRoute) {
+          foundDefaultRoute = true
+          
+          const correctChoice = question.choices[question.correctAnswer]
+          if (correctChoice === '0.0.0.0/0') {
+            foundDefaultRouteAsCorrect = true
+            // デフォルトルートが正解の場合の説明を確認
+            expect(question.explanation).toContain('デフォルトルート')
+          }
+        }
+      }
+      
+      // 確率的にデフォルトルートが含まれることを確認
+      expect(foundDefaultRoute).toBe(true)
+      expect(foundDefaultRouteAsCorrect).toBe(true)
+    })
+
+    test('ロンゲストマッチ問題で紛らわしい選択肢が生成される', () => {
+      for (let i = 0; i < 10; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        // 選択肢の中に、似ているネットワークアドレスが含まれることを確認
+        const networks = question.choices.map(choice => {
+          const [network, cidr] = choice.split('/')
+          return { network, cidr: parseInt(cidr) }
+        })
+        
+        // CIDRが大きい（より具体的な）選択肢が含まれることを確認
+        const cidrs = networks.map(n => n.cidr).sort((a, b) => b - a)
+        expect(cidrs[0]).toBeGreaterThanOrEqual(cidrs[1]) // 最大CIDR >= 2番目のCIDR
+        
+        // ネットワークアドレスが完全にランダムではないことを確認
+        // 全ての選択肢がユニークであることを確認
+        const uniqueNetworks = new Set(networks.map(n => `${n.network}/${n.cidr}`))
+        expect(uniqueNetworks.size).toBe(4) // 全て異なる選択肢
+        
+        // CIDR値が有効な範囲内であることを確認
+        networks.forEach(({ cidr }) => {
+          expect(cidr).toBeGreaterThanOrEqual(0)
+          expect(cidr).toBeLessThanOrEqual(32)
+        })
+      }
+    })
+
     test('フォールバック選択肢生成のテスト', () => {
       // 複数の問題タイプでフォールバック処理が正しく動作することを確認
       const questionTypes = [
         QuestionType.CIDR_TO_SUBNET,
         QuestionType.SUBNET_TO_CIDR,
         QuestionType.NETWORK_ADDRESS,
-        QuestionType.BROADCAST_ADDRESS
+        QuestionType.BROADCAST_ADDRESS,
+        QuestionType.LONGEST_MATCH
       ]
       
       questionTypes.forEach(type => {

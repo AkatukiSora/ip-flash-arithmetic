@@ -105,9 +105,9 @@ describe('統合テスト', () => {
       })
 
       // セッション結果を検証
-      expect(practiceSession.totalQuestions).toBe(21) // 7トピック × 3問
-      expect(practiceSession.correctAnswers).toBe(21) // 全て正解として処理
-      expect(practiceSession.topicScores.size).toBe(7) // 7つのトピック
+      expect(practiceSession.totalQuestions).toBe(24) // 8トピック × 3問
+      expect(practiceSession.correctAnswers).toBe(24) // 全て正解として処理
+      expect(practiceSession.topicScores.size).toBe(8) // 8つのトピック
     })
   })
 
