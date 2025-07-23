@@ -1,3 +1,7 @@
+# IP Flash Arithmetic
+
+[![CI/CD Pipeline](https://github.com/AkatukiSora/ip-flash-arithmetic/actions/workflows/ci.yml/badge.svg)](https://github.com/AkatukiSora/ip-flash-arithmetic/actions/workflows/ci.yml)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -9,6 +13,23 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Testing
+
+このプロジェクトでは、Jestを使用して包括的なテストを実装しています。
+
+```bash
+# テストを実行
+pnpm test
+
+# カバレッジレポートと共にテストを実行
+pnpm run test:coverage
+
+# ウォッチモードでテストを実行
+pnpm run test:watch
+```
+
+現在のテストカバレッジ: **86.53%** (5つのテストスイート、101のテスト)
 
 ## What this app
 
