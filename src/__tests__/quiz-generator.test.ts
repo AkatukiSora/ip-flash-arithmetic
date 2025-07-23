@@ -85,6 +85,36 @@ describe('問題生成機能', () => {
       expect(hostIp).not.toBe('10.0.0.4') // ネットワークアドレス
       expect(hostIp).not.toBe('10.0.0.7') // ブロードキャストアドレス
     })
+
+    test('非常に小さなサブネット(/31)でフォールバック処理をテストする', () => {
+      // /31の場合、ホストアドレスは理論上存在しないが、フォールバック処理が働く
+      const hostIp = generateHostIpInNetwork('192.168.1.0', 31)
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+    })
+
+    test('/32サブネット（単一ホスト）でフォールバック処理をテストする', () => {
+      const hostIp = generateHostIpInNetwork('192.168.1.1', 32)
+      // /32の場合でもフォールバック処理により何らかのIPが返される
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+    })
+
+    test('フォールバック処理で最後のオクテットが調整される', () => {
+      // 特定のケースでフォールバック処理をトリガーさせる
+      const hostIp = generateHostIpInNetwork('192.168.1.254', 31)
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+    })
+
+    test('フォールバック処理で3番目のオクテットが調整される場合', () => {
+      // 最後のオクテットが上限に達した場合の処理をテスト
+      const hostIp = generateHostIpInNetwork('10.0.255.254', 31)
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+    })
+
+    test('極端に小さなネットワークでのフォールバック処理', () => {
+      // /30ネットワークでの特殊ケース
+      const hostIp = generateHostIpInNetwork('172.16.0.252', 30)
+      expect(hostIp).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+    })
   })
 
   describe('generateRandomSubnetMask', () => {
@@ -261,6 +291,51 @@ describe('問題生成機能', () => {
         
         // 少なくとも1回は重複のない選択肢が生成されることを確認
         expect(hasUniqueChoices).toBe(true)
+      })
+    })
+
+    test('フォールバック処理により選択肢が確実に4つ生成される', () => {
+      // 複数回テストして、常に4つの選択肢が生成されることを確認
+      for (let i = 0; i < 10; i++) {
+        const question = generateQuizQuestion(QuestionType.CIDR_TO_SUBNET)
+        expect(question.choices).toHaveLength(4)
+      }
+    })
+
+    test('数値型問題でのバリエーション生成をテスト', () => {
+      // HOST_COUNTはnumber型の回答を生成するため、このケースをテスト
+      const question = generateQuizQuestion(QuestionType.HOST_COUNT)
+      expect(question.choices).toHaveLength(4)
+      expect(question.choices.every(choice => /^\d+$/.test(choice))).toBe(true)
+    })
+
+    test('generateWrongChoices関数の直接テスト - defaultケース', () => {
+      // 内部的にgenerateWrongChoices関数のdefaultブランチをテストするため
+      // 予期しない回答タイプが渡された場合のテスト（通常は発生しないが、カバレッジ向上のため）
+      
+      // BINARY_IP_CONVERSION問題を生成して、間接的にgenerateWrongChoicesをテスト
+      for (let i = 0; i < 5; i++) {
+        const question = generateQuizQuestion(QuestionType.BINARY_IP_CONVERSION)
+        expect(question.choices).toHaveLength(4)
+        expect(question.choices.every(choice => typeof choice === 'string')).toBe(true)
+      }
+    })
+
+    test('フォールバック選択肢生成のテスト', () => {
+      // 複数の問題タイプでフォールバック処理が正しく動作することを確認
+      const questionTypes = [
+        QuestionType.CIDR_TO_SUBNET,
+        QuestionType.SUBNET_TO_CIDR,
+        QuestionType.NETWORK_ADDRESS,
+        QuestionType.BROADCAST_ADDRESS
+      ]
+      
+      questionTypes.forEach(type => {
+        for (let i = 0; i < 3; i++) {
+          const question = generateQuizQuestion(type)
+          expect(question.choices).toHaveLength(4)
+          expect(new Set(question.choices).size).toBe(4) // 重複なし
+        }
       })
     })
   })

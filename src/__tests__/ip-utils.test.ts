@@ -25,6 +25,20 @@ describe('IPアドレス変換機能', () => {
       expect(isValidIpAddress('abc.def.ghi.jkl')).toBe(false)
       expect(isValidIpAddress('')).toBe(false)
     })
+
+    test('先頭ゼロ付きのIPアドレスを許容する', () => {
+      expect(isValidIpAddress('192.168.001.005')).toBe(true)
+      expect(isValidIpAddress('010.000.000.001')).toBe(true)
+      expect(isValidIpAddress('255.255.255.255')).toBe(true)
+      expect(isValidIpAddress('00.00.00.00')).toBe(true)
+      expect(isValidIpAddress('192.168.00.005')).toBe(true)
+    })
+
+    test('先頭ゼロでも範囲外の値は無効とする', () => {
+      expect(isValidIpAddress('256.168.001.005')).toBe(false)
+      expect(isValidIpAddress('192.999.001.005')).toBe(false)
+      expect(isValidIpAddress('192.168.001.300')).toBe(false)
+    })
   })
 
   describe('binaryToIp', () => {
@@ -51,6 +65,13 @@ describe('IPアドレス変換機能', () => {
       expect(() => ipToBinary('256.1.1.1')).toThrow('Invalid IP address')
       expect(() => ipToBinary('192.168.1')).toThrow('Invalid IP address')
       expect(() => ipToBinary('abc.def.ghi.jkl')).toThrow('Invalid IP address')
+    })
+
+    test('先頭ゼロ付きIPアドレスも正しく変換できる', () => {
+      expect(ipToBinary('192.168.001.005')).toBe('11000000.10101000.00000001.00000101')
+      expect(ipToBinary('010.000.000.001')).toBe('00001010.00000000.00000000.00000001')
+      expect(ipToBinary('192.168.00.005')).toBe('11000000.10101000.00000000.00000101')
+      expect(ipToBinary('00.00.00.00')).toBe('00000000.00000000.00000000.00000000')
     })
 
     test('binaryToIpとipToBinaryは相互変換可能', () => {
