@@ -21,8 +21,6 @@ function generateLongestMatchNetworks(targetIp: string): {
   otherNetworks: Array<{ network: string; cidr: number }>;
   includeDefaultRoute: boolean;
 } {
-  const ipParts = targetIp.split('.').map(Number)
-  
   // 正解となるネットワークのCIDRを決定（/16, /20, /24, /28から選択）
   const possibleCidrs = [16, 20, 24, 28, 29, 30]
   const correctCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
@@ -69,53 +67,96 @@ function generateLongestMatchNetworks(targetIp: string): {
     }
   }
   
+  // 重複チェックのヘルパー関数
+  const isDuplicateNetwork = (network: string, cidr: number): boolean => {
+    // 正解との重複チェック
+    if (network === correctNetwork && cidr === correctCidr) {
+      return true
+    }
+    // 既存の選択肢との重複チェック
+    return otherNetworks.some(entry => 
+      entry.network === network && entry.cidr === cidr
+    )
+  }
+
   // CIDRが大きいがネットワーク部が一部違う紛らわしい選択肢を生成
   let attempts = 0
-  while (otherNetworks.length < 3 && attempts < 100) {
+  const maxAttempts = 200
+  
+  while (otherNetworks.length < 3 && attempts < maxAttempts) {
     const confusingCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
     
     // 正解より具体的（CIDRが大きい）だが、ネットワーク部が微妙に違う選択肢
     if (confusingCidr > correctCidr) {
       const confusingNetwork = generateConfusingNetwork(targetIp, confusingCidr, correctCidr)
-      if (confusingNetwork && !ipBelongsToNetwork(targetIp, confusingNetwork, confusingCidr)) {
-        const networkEntry = { network: confusingNetwork, cidr: confusingCidr }
-        const isDuplicate = otherNetworks.some(entry => 
-          entry.network === networkEntry.network && entry.cidr === networkEntry.cidr
-        ) || (confusingNetwork === correctNetwork && confusingCidr === correctCidr)
-        if (!isDuplicate) {
-          otherNetworks.push(networkEntry)
-          continue
-        }
+      if (confusingNetwork && 
+          !ipBelongsToNetwork(targetIp, confusingNetwork, confusingCidr) &&
+          !isDuplicateNetwork(confusingNetwork, confusingCidr)) {
+        otherNetworks.push({ network: confusingNetwork, cidr: confusingCidr })
+        attempts++
+        continue
       }
     }
     
     // 似ているがマッチしないネットワークを生成
     const similarNetwork = generateNonMatchingButSimilarNetwork(targetIp, confusingCidr)
-    const networkEntry = { network: similarNetwork, cidr: confusingCidr }
-    const isDuplicate = otherNetworks.some(entry => 
-      entry.network === networkEntry.network && entry.cidr === networkEntry.cidr
-    ) || (similarNetwork === correctNetwork && confusingCidr === correctCidr)
-    
-    if (!isDuplicate) {
-      otherNetworks.push(networkEntry)
+    if (!isDuplicateNetwork(similarNetwork, confusingCidr)) {
+      otherNetworks.push({ network: similarNetwork, cidr: confusingCidr })
     }
     
     attempts++
   }
   
   // フォールバック：選択肢が足りない場合は完全にランダムなネットワークを追加
-  while (otherNetworks.length < 3) {
+  let fallbackAttempts = 0
+  const maxFallbackAttempts = 100
+  
+  while (otherNetworks.length < 3 && fallbackAttempts < maxFallbackAttempts) {
     const fallbackCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
     const randomIp = generateRandomIpAddress()
     const fallbackNetwork = calculateNetworkAddress(randomIp, fallbackCidr)
     
-    const networkEntry = { network: fallbackNetwork, cidr: fallbackCidr }
-    const isDuplicate = otherNetworks.some(entry => 
-      entry.network === networkEntry.network && entry.cidr === networkEntry.cidr
-    ) || (fallbackNetwork === correctNetwork && fallbackCidr === correctCidr)
+    if (!isDuplicateNetwork(fallbackNetwork, fallbackCidr)) {
+      otherNetworks.push({ network: fallbackNetwork, cidr: fallbackCidr })
+    }
     
-    if (!isDuplicate) {
-      otherNetworks.push(networkEntry)
+    fallbackAttempts++
+  }
+  
+  // 最終フォールバック：どうしても3つの選択肢が作れない場合
+  if (otherNetworks.length < 3) {
+    const remainingCount = 3 - otherNetworks.length
+    for (let i = 0; i < remainingCount; i++) {
+      // 確実に重複しない選択肢を生成
+      let uniqueNetwork: string
+      let uniqueCidr: number
+      let uniqueAttempts = 0
+      
+      do {
+        uniqueCidr = possibleCidrs[Math.floor(Math.random() * possibleCidrs.length)]
+        const baseIp = generateRandomIpAddress()
+        uniqueNetwork = calculateNetworkAddress(baseIp, uniqueCidr)
+        uniqueAttempts++
+      } while (isDuplicateNetwork(uniqueNetwork, uniqueCidr) && uniqueAttempts < 50)
+      
+      // 最終手段：既存の選択肢から派生させて確実にユニークにする
+      if (isDuplicateNetwork(uniqueNetwork, uniqueCidr)) {
+        const baseCidr = 24
+        const baseNetwork = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.0`
+        uniqueNetwork = baseNetwork
+        uniqueCidr = baseCidr
+        
+        // それでも重複する場合は、IPアドレスを少しずつ変更
+        let offset = 1
+        while (isDuplicateNetwork(uniqueNetwork, uniqueCidr) && offset < 256) {
+          const parts = uniqueNetwork.split('.').map(Number)
+          parts[2] = (parts[2] + offset) % 256
+          uniqueNetwork = parts.join('.')
+          offset++
+        }
+      }
+      
+      otherNetworks.push({ network: uniqueNetwork, cidr: uniqueCidr })
     }
   }
   
@@ -131,8 +172,6 @@ function generateLongestMatchNetworks(targetIp: string): {
  * 紛らわしいネットワークアドレスを生成する（CIDRが大きいがマッチしない）
  */
 function generateConfusingNetwork(targetIp: string, confusingCidr: number, baseCidr: number): string | null {
-  const ipParts = targetIp.split('.').map(Number)
-  
   // 基準となるネットワークを計算
   const baseNetwork = calculateNetworkAddress(targetIp, baseCidr)
   const baseNetworkParts = baseNetwork.split('.').map(Number)
@@ -140,28 +179,56 @@ function generateConfusingNetwork(targetIp: string, confusingCidr: number, baseC
   // より具体的なネットワーク部で、最後の数ビットだけ違うアドレスを生成
   const confusingParts = [...baseNetworkParts]
   
-  // CIDRに応じて適切な位置のビットを変更
-  if (confusingCidr <= 24) {
-    // /24以下の場合、最後のオクテットで違いを作る
-    const increment = Math.max(1, Math.floor(Math.random() * 64) + 1)
-    confusingParts[3] = (confusingParts[3] + increment) % 256
-  } else {
-    // /25以上の場合、より細かい単位で違いを作る
-    const hostBits = 32 - confusingCidr
-    const subnetIncrement = Math.pow(2, hostBits)
-    confusingParts[3] = Math.floor(confusingParts[3] / subnetIncrement) * subnetIncrement
-    
-    // 隣接するサブネットアドレスを生成
-    if (confusingParts[3] + subnetIncrement < 256) {
-      confusingParts[3] += subnetIncrement
-    } else if (confusingParts[3] - subnetIncrement >= 0) {
-      confusingParts[3] -= subnetIncrement
+  let attempts = 0
+  let resultNetwork: string | null = null
+  
+  while (attempts < 10) {
+    // CIDRに応じて適切な位置のビットを変更
+    if (confusingCidr <= 24) {
+      // /24以下の場合、最後のオクテットで違いを作る
+      const increment = Math.max(1, Math.floor(Math.random() * 64) + 1)
+      confusingParts[3] = (confusingParts[3] + increment) % 256
     } else {
-      return null
+      // /25以上の場合、より細かい単位で違いを作る
+      const hostBits = 32 - confusingCidr
+      const subnetIncrement = Math.pow(2, hostBits)
+      confusingParts[3] = Math.floor(confusingParts[3] / subnetIncrement) * subnetIncrement
+      
+      // 隣接するサブネットアドレスを生成（複数の選択肢を試す）
+      const multiplier = (attempts % 2 === 0) ? 1 : -1
+      const offset = Math.floor(attempts / 2) + 1
+      
+      if (confusingParts[3] + (subnetIncrement * multiplier * offset) < 256 && 
+          confusingParts[3] + (subnetIncrement * multiplier * offset) >= 0) {
+        confusingParts[3] += subnetIncrement * multiplier * offset
+      } else if (attempts < 5) {
+        // 他のオクテットを少し変更してみる
+        confusingParts[2] = (confusingParts[2] + 1) % 256
+        confusingParts[3] = 0
+      } else {
+        attempts++
+        continue
+      }
     }
+    
+    const candidateNetwork = confusingParts.join('.')
+    
+    // 対象IPがこのネットワークに属さないことを確認
+    if (!ipBelongsToNetwork(targetIp, candidateNetwork, confusingCidr)) {
+      resultNetwork = candidateNetwork
+      break
+    }
+    
+    // 次の試行のために値をリセット
+    confusingParts[0] = baseNetworkParts[0]
+    confusingParts[1] = baseNetworkParts[1]
+    confusingParts[2] = baseNetworkParts[2]
+    confusingParts[3] = baseNetworkParts[3]
+    
+    attempts++
   }
   
-  return confusingParts.join('.')
+  return resultNetwork
 }
 
 /**
@@ -170,40 +237,62 @@ function generateConfusingNetwork(targetIp: string, confusingCidr: number, baseC
 function generateNonMatchingButSimilarNetwork(targetIp: string, cidr: number): string {
   const ipParts = targetIp.split('.').map(Number)
   
+  // まず対象IPでネットワークアドレスを計算
+  const targetNetworkAddress = calculateNetworkAddress(targetIp, cidr)
+  
   // 元のIPアドレスに似ているが、ネットワーク部が異なるアドレスを生成
   const similarParts = [...ipParts]
   
-  // CIDRに応じて適切な位置を変更
-  if (cidr <= 8) {
-    // 最初のオクテットを変更
-    similarParts[0] = (similarParts[0] + Math.floor(Math.random() * 50) + 1) % 256
-  } else if (cidr <= 16) {
-    // 2番目のオクテットを変更
-    similarParts[1] = (similarParts[1] + Math.floor(Math.random() * 20) + 1) % 256
-  } else if (cidr <= 24) {
-    // 3番目のオクテットを変更
-    similarParts[2] = (similarParts[2] + Math.floor(Math.random() * 10) + 1) % 256
-  } else {
-    // 4番目のオクテットを変更（サブネット境界を考慮）
-    const hostBits = 32 - cidr
-    const subnetSize = Math.pow(2, hostBits)
-    const currentSubnet = Math.floor(similarParts[3] / subnetSize) * subnetSize
-    
-    let newSubnet
-    if (currentSubnet + subnetSize < 256) {
-      newSubnet = currentSubnet + subnetSize
-    } else if (currentSubnet - subnetSize >= 0) {
-      newSubnet = currentSubnet - subnetSize
+  // 複数回試行して、確実に異なるネットワークを生成
+  let attempts = 0
+  let resultNetwork: string
+  
+  do {
+    // CIDRに応じて適切な位置を変更
+    if (cidr <= 8) {
+      // 最初のオクテットを変更
+      similarParts[0] = (similarParts[0] + Math.floor(Math.random() * 50) + 1) % 256
+    } else if (cidr <= 16) {
+      // 2番目のオクテットを変更
+      similarParts[1] = (similarParts[1] + Math.floor(Math.random() * 20) + 1) % 256
+    } else if (cidr <= 24) {
+      // 3番目のオクテットを変更
+      similarParts[2] = (similarParts[2] + Math.floor(Math.random() * 10) + 1) % 256
     } else {
-      // フォールバック：3番目のオクテットを変更
-      similarParts[2] = (similarParts[2] + 1) % 256
-      newSubnet = 0
+      // 4番目のオクテットを変更（サブネット境界を考慮）
+      const hostBits = 32 - cidr
+      const subnetSize = Math.pow(2, hostBits)
+      const currentSubnet = Math.floor(similarParts[3] / subnetSize) * subnetSize
+      
+      let newSubnet
+      // より確実に異なるサブネットを選択
+      const randomOffset = Math.floor(Math.random() * 3) + 1 // 1, 2, 3のいずれか
+      if (currentSubnet + (subnetSize * randomOffset) < 256) {
+        newSubnet = currentSubnet + (subnetSize * randomOffset)
+      } else if (currentSubnet - (subnetSize * randomOffset) >= 0) {
+        newSubnet = currentSubnet - (subnetSize * randomOffset)
+      } else {
+        // フォールバック：3番目のオクテットを変更
+        similarParts[2] = (similarParts[2] + Math.floor(Math.random() * 5) + 1) % 256
+        newSubnet = 0
+      }
+      
+      similarParts[3] = newSubnet
     }
     
-    similarParts[3] = newSubnet
-  }
+    resultNetwork = calculateNetworkAddress(similarParts.join('.'), cidr)
+    attempts++
+    
+    // 無限ループ防止
+    if (attempts > 50) {
+      // 最後の手段：完全にランダムなネットワークを生成
+      const randomIp = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`
+      resultNetwork = calculateNetworkAddress(randomIp, cidr)
+      break
+    }
+  } while (resultNetwork === targetNetworkAddress)
   
-  return calculateNetworkAddress(similarParts.join('.'), cidr)
+  return resultNetwork
 }
 
 export enum QuestionType {
@@ -372,7 +461,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `IPアドレス ${ip} を2進数表記に変換してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `${ip} の2進数表記は ${binary} です`
+        explanation: `💡 計算方法：\n各オクテット（8ビット）を2進数に変換します。\n例：192 = 128+64 = 11000000\n\n${ip} の2進数表記は ${binary} です`
       }
     }
     
@@ -408,7 +497,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `CIDR /${cidr} のサブネットマスクを選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `/${cidr} のサブネットマスクは ${subnet} です`
+        explanation: `💡 変換ルール：\nCIDR値分だけ左から1で埋め、残りを0にします。\n/${cidr} = ${cidr}個の1 + ${32-cidr}個の0\n\n/${cidr} のサブネットマスクは ${subnet} です`
       }
     }
     
@@ -435,7 +524,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `サブネットマスク ${subnet} のCIDR表記を選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `${subnet} のCIDR表記は /${cidr} です`
+        explanation: `💡 計算方法：\nサブネットマスクの連続する1の個数を数えます。\n${subnet} = ${cidr}個の連続する1 = /${cidr}\n\n${subnet} のCIDR表記は /${cidr} です`
       }
     }
     
@@ -452,7 +541,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `IPアドレス ${ip}/${cidr} のネットワークアドレスを選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `${ip}/${cidr} のネットワークアドレスは ${networkAddress} です`
+        explanation: `💡 計算手順：\n1. IPアドレスとサブネットマスクでAND演算\n2. ホスト部のビットを全て0にする\n3. ネットワーク部のみが残る\n\n${ip}/${cidr} のネットワークアドレスは ${networkAddress} です`
       }
     }
     
@@ -469,7 +558,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `IPアドレス ${ip}/${cidr} のブロードキャストアドレスを選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `${ip}/${cidr} のブロードキャストアドレスは ${broadcastAddress} です`
+        explanation: `✅ 正解：${ip}/${cidr} のブロードキャストアドレスは ${broadcastAddress} です\n\n💡 計算手順：\n1. ネットワークアドレスを求める\n2. ホスト部のビットを全て1にする\n3. そのネットワーク内の最後のアドレス`
       }
     }
     
@@ -485,7 +574,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `CIDR /${cidr} のサブネットで利用可能なホスト数を選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `/${cidr} のサブネットで利用可能なホスト数は ${hostCount} です`
+        explanation: `✅ 正解：/${cidr} のサブネットで利用可能なホスト数は ${hostCount} です\n\n💡 計算公式：\n• ホストビット数 = 32 - ${cidr} = ${32-cidr}ビット\n• 利用可能なホスト数 = 2^${32-cidr} - 2 = ${hostCount}\n• -2の理由：ネットワークアドレスとブロードキャストを除く`
       }
     }
     
@@ -518,7 +607,7 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
         question: `ネットワーク ${networkAddress}/${cidr} に属する有効なホストアドレスを選択してください`,
         choices: allChoices,
         correctAnswer,
-        explanation: `${validHost} は ネットワーク ${networkAddress}/${cidr} に属する有効なホストアドレスです。ネットワークアドレス(${networkAddress})とブロードキャストアドレス(${broadcastAddress})は使用できません。`
+        explanation: `✅ 正解：${validHost} は ネットワーク ${networkAddress}/${cidr} に属する有効なホストアドレスです。\n\n💡 ポイント：\n• ネットワークアドレス（${networkAddress}）は使用不可\n• ブロードキャストアドレス（${broadcastAddress}）は使用不可\n• それ以外のアドレスがホストに割り当て可能`
       };
     }
     
@@ -552,9 +641,9 @@ export function generateQuizQuestion(type: QuestionType): QuizQuestion {
       // デフォルトルートが含まれる場合の説明を調整
       let explanationText: string
       if (includeDefaultRoute && correctCidr === 0) {
-        explanationText = `IPアドレス ${targetIp} のルーティング判定：\n${routingTableText}\n\n他のネットワークにマッチしないため、デフォルトルート ${correctChoice} が選択されます。`
+        explanationText = `✅ 正解：${correctChoice}\n\n💡 ルーティング判定結果：\n${routingTableText}\n\n📍 判定理由：\n他のネットワークアドレスにマッチしないため、\nデフォルトルート（0.0.0.0/0）が選択されます。`
       } else {
-        explanationText = `IPアドレス ${targetIp} のルーティング判定：\n${routingTableText}\n\nルーティングでは最も具体的な（CIDR値が最も大きい）マッチするネットワークが選択されるため、${correctChoice} が正解です。`
+        explanationText = `✅ 正解：${correctChoice}\n\n💡 ルーティング判定結果：\n${routingTableText}\n\n📍 ロンゲストマッチ：\n• 複数のネットワークがマッチする場合\n• 最も具体的（CIDR値が最も大きい）なものを選択\n• より詳細なルートが優先される`
       }
       
       return {
