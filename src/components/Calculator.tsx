@@ -112,7 +112,7 @@ export default function Calculator({ isPopup = false }: CalculatorProps) {
         maxHost,
         hostCount
       })
-    } catch (error) {
+    } catch {
       alert('計算エラーが発生しました')
     }
   }
