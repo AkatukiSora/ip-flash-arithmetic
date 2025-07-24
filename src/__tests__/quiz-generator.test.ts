@@ -2,14 +2,16 @@
  * 問題生成機能のテスト
  */
 import { 
-  generateRandomIpAddress,
-  generateRandomSubnetMask,
-  generateRandomCidr,
-  generateRandomBinaryIp,
-  generateHostIpInNetwork,
   generateQuizQuestion,
   QuestionType
 } from '../utils/quiz-generator'
+import { generateRandomIpAddress } from '../utils/network-generator'
+import { generateHostIpInNetwork } from '../utils/host-generator'
+import { 
+  generateRandomCidr,
+  generateRandomSubnetMask,
+  generateRandomBinaryIp
+} from '../utils/choice-generator'
 
 describe('問題生成機能', () => {
   describe('generateRandomIpAddress', () => {
@@ -345,6 +347,8 @@ describe('問題生成機能', () => {
           if (uniqueChoices.size === 4) {
             hasUniqueChoices = true
             break
+          } else {
+            console.log(`問題タイプ ${type}: 選択肢数=${question.choices.length}, ユニーク数=${uniqueChoices.size}, 選択肢=[${question.choices.join(', ')}]`)
           }
         }
         
