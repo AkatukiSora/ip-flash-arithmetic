@@ -121,8 +121,10 @@ export default function PracticePage() {
             
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow dark:shadow-gray-900/30">
               <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                項目別に解説付きで学習できます<br/>
-                自分のペースで練習しましょう
+                📚 <strong>練習モードについて</strong><br/>
+                • 各項目の基礎理論から詳しく学習<br/>
+                • 時間制限なしでじっくり考察<br/>
+                • 詳細な解説で理解を深められます
               </p>
             </div>
           </header>
@@ -212,7 +214,7 @@ export default function PracticePage() {
                 setCurrentTopic(newType)
                 generateNewQuestion(newType)
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               {PRACTICE_TOPICS.map(topic => (
                 <option key={topic.type} value={topic.type}>
@@ -276,7 +278,7 @@ export default function PracticePage() {
                 {currentQuestion.explanation && (
                   <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg text-sm text-gray-700 dark:text-gray-300 mb-4">
                     <div className="font-semibold mb-2">💡 解説:</div>
-                    <p>{currentQuestion.explanation}</p>
+                    <div className="whitespace-pre-line">{currentQuestion.explanation}</div>
                   </div>
                 )}
 
