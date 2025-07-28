@@ -312,5 +312,89 @@ describe('choice-generator', () => {
         expect(['wrong1', 'wrong2', 'wrong3']).toContain(choice)
       })
     })
+
+    it('フォールバック処理で強制的に追加される処理をテスト', () => {
+      const correctAnswer = 'test-answer'
+      const wrongChoices: string[] = []
+      
+      // maxAttemptsに達した場合のフォールバック処理をテスト
+      const result = shuffleChoices(correctAnswer, wrongChoices)
+      
+      expect(result.choices).toHaveLength(4)
+      expect(result.choices).toContain(correctAnswer)
+      
+      // フォールバック選択肢が生成されることを確認
+      const fallbackChoices = result.choices.filter(choice => 
+        choice !== correctAnswer && choice.includes('fallback')
+      )
+      expect(fallbackChoices.length).toBeGreaterThan(0)
+    })
+
+    it('ネットワーク形式での複数回のリトライ処理をテスト', () => {
+      const correctAnswer = '10.0.0.0/8'
+      const wrongChoices: string[] = []
+      
+      const result = shuffleChoices(correctAnswer, wrongChoices, 'network')
+      
+      expect(result.choices).toHaveLength(4)
+      expect(result.choices).toContain(correctAnswer)
+      
+      // ネットワーク形式の選択肢が生成されることを確認
+      result.choices.forEach(choice => {
+        if (choice !== correctAnswer) {
+          expect(choice).toMatch(/\d+\.\d+\.\d+\.\d+\/\d+/)
+        }
+      })
+    })
+  })
+
+  // エッジケースをテストする追加のdescribe
+  describe('エッジケースとフォールバック処理', () => {
+    it('generateWrongChoicesで最大試行回数に達した場合のフォールバック', () => {
+      // 非常に特殊な正解で重複しにくい状況を作る
+      const correctAnswer = 'very-unique-answer-123456789'
+      const wrongChoices = generateWrongChoices(correctAnswer, 'ip')
+      
+      expect(wrongChoices).toHaveLength(3)
+      wrongChoices.forEach(choice => {
+        expect(choice).not.toBe(correctAnswer)
+      })
+    })
+
+    it('generateUniqueSubnetChoicesのフォールバック処理', () => {
+      // 特殊なサブネットマスクでフォールバック処理をテスト
+      const correctSubnet = 'unique-subnet-mask'
+      const wrongChoices = generateUniqueSubnetChoices(correctSubnet)
+      
+      expect(wrongChoices).toHaveLength(3)
+      wrongChoices.forEach(choice => {
+        expect(choice).not.toBe(correctSubnet)
+      })
+    })
+
+    it('generateWrongChoicesで重複時の強制追加処理', () => {
+      // 既存の選択肢と重複する可能性が高い状況を作る
+      const correctAnswer = '192.168.1.1'
+      
+      // Math.randomをモックして重複を発生させる
+      const originalRandom = Math.random
+      let callCount = 0
+      Math.random = jest.fn(() => {
+        callCount++
+        // 特定の呼び出しで同じ値を返すようにして重複を発生させる
+        if (callCount % 10 === 0) return 0.5
+        return originalRandom()
+      })
+      
+      const wrongChoices = generateWrongChoices(correctAnswer, 'ip')
+      
+      expect(wrongChoices).toHaveLength(3)
+      wrongChoices.forEach(choice => {
+        expect(choice).not.toBe(correctAnswer)
+      })
+      
+      // Math.randomを元に戻す
+      Math.random = originalRandom
+    })
   })
 })

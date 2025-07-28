@@ -278,4 +278,80 @@ describe('Calculator Component', () => {
       expect(binaryInput).toHaveValue('')
     })
   })
+
+  describe('エラーハンドリングとエッジケース', () => {
+    test('サブネット計算で計算エラーが発生した場合のアラート処理', () => {
+      render(<Calculator />)
+      
+      // サブネット計算モードに切り替え
+      fireEvent.click(screen.getByText('サブネット計算'))
+      
+      const ipInput = screen.getByPlaceholderText('192.168.1.100')
+      const cidrInput = screen.getByPlaceholderText('24')
+      const calculateButton = screen.getByText('サブネット情報を計算')
+      
+      // alertをモック
+      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {})
+      
+      // 無効なIPアドレスを入力して計算エラーを発生させる
+      fireEvent.change(ipInput, { target: { value: 'invalid.ip.address' } })
+      fireEvent.change(cidrInput, { target: { value: '24' } })
+      fireEvent.click(calculateButton)
+      
+      // 計算エラーのアラートが表示されることを確認
+      expect(alertSpy).toHaveBeenCalledWith('無効なIPアドレスです')
+      
+      alertSpy.mockRestore()
+    })
+
+    test('clearAllボタンでサブネット結果もクリアされる', async () => {
+      render(<Calculator />)
+      
+      // サブネット計算モードに切り替え
+      fireEvent.click(screen.getByText('サブネット計算'))
+      
+      const ipInput = screen.getByPlaceholderText('192.168.1.100')
+      const cidrInput = screen.getByPlaceholderText('24')
+      const calculateButton = screen.getByText('サブネット情報を計算')
+      
+      // 有効な値を入力して計算を実行
+      fireEvent.change(ipInput, { target: { value: '192.168.1.100' } })
+      fireEvent.change(cidrInput, { target: { value: '24' } })
+      fireEvent.click(calculateButton)
+      
+      // 結果が表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText('ネットワークアドレス:')).toBeInTheDocument()
+      })
+      
+      // 変換ツールモードに戻る
+      fireEvent.click(screen.getByText('変換ツール'))
+      
+      // すべてクリアボタンをクリック
+      fireEvent.click(screen.getByText('すべてクリア'))
+      
+      // サブネット計算モードに戻って結果がクリアされていることを確認
+      fireEvent.click(screen.getByText('サブネット計算'))
+      
+      await waitFor(() => {
+        expect(screen.queryByText('ネットワークアドレス:')).not.toBeInTheDocument()
+      })
+    })
+
+    test('ポップアップモードでのクラス名設定', () => {
+      const { container } = render(<Calculator isPopup={true} />)
+      
+      // ポップアップモードの場合のコンテナクラスが適用されていることを確認
+      const mainDiv = container.firstChild as HTMLElement
+      expect(mainDiv).toHaveClass('h-full', 'overflow-y-auto', 'bg-white', 'dark:bg-gray-800')
+    })
+
+    test('通常モードでのクラス名設定', () => {
+      const { container } = render(<Calculator />)
+      
+      // 通常モードの場合、特別なクラスが適用されていないことを確認
+      const mainDiv = container.firstChild as HTMLElement
+      expect(mainDiv).not.toHaveClass('h-full', 'overflow-y-auto')
+    })
+  })
 })

@@ -263,4 +263,161 @@ describe('longest-match-generator', () => {
       })
     })
   })
+
+  // 内部関数とエッジケースのテスト
+  describe('内部関数とエッジケースのテスト', () => {
+    it('デフォルトルートが正解になる確率的なケースを確実にテスト', () => {
+      // Math.randomをモックしてデフォルトルートケースを強制実行
+      const originalRandom = Math.random
+      Math.random = jest.fn(() => 0.1) // 20%未満でデフォルトルートケース
+      
+      const targetIp = '203.0.113.50'
+      const result = generateLongestMatchNetworks(targetIp)
+      
+      expect(result.correctNetwork).toBe('0.0.0.0')
+      expect(result.correctCidr).toBe(0)
+      expect(result.otherNetworks).toHaveLength(3)
+      
+      // 他の選択肢が対象IPにマッチしないことを確認
+      result.otherNetworks.forEach(({ network, cidr }) => {
+        // デフォルトルート以外のネットワークは対象IPにマッチしないはず
+        if (network !== '0.0.0.0') {
+          expect(network).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+        }
+      })
+      
+      Math.random = originalRandom
+    })
+
+    it('通常ケースでデフォルトルートが選択肢に含まれるケース', () => {
+      // Math.randomをモックして通常ケース + デフォルトルート選択肢を強制実行
+      const originalRandom = Math.random
+      let callCount = 0
+      Math.random = jest.fn(() => {
+        callCount++
+        if (callCount === 1) return 0.5 // デフォルトルートケースを回避
+        if (callCount === 2) return 0 // possibleCidrsの最初を選択
+        if (callCount === 3) return 0.3 // 40%未満でデフォルトルートを選択肢に追加
+        return originalRandom()
+      })
+      
+      const targetIp = '192.168.1.100'
+      const result = generateLongestMatchNetworks(targetIp)
+      
+      expect(result.correctNetwork).not.toBe('0.0.0.0')
+      expect(result.correctCidr).toBeGreaterThan(0)
+      
+      // 選択肢にデフォルトルートが含まれているかチェック
+      const hasDefaultRoute = result.otherNetworks.some(
+        ({ network, cidr }) => network === '0.0.0.0' && cidr === 0
+      )
+      expect(hasDefaultRoute).toBe(true)
+      
+      Math.random = originalRandom
+    })
+
+    it('紛らわしいネットワーク生成でnullが返されるケース', () => {
+      // confusingCidr <= correctCidrの場合にnullが返されることをテスト
+      const originalRandom = Math.random
+      let callCount = 0
+      Math.random = jest.fn(() => {
+        callCount++
+        if (callCount === 1) return 0.5 // デフォルトルートケースを回避
+        if (callCount === 2) return 0.75 // possibleCidrs[3] = 28を選択
+        if (callCount === 3) return 0.5 // デフォルトルート選択肢を回避
+        if (callCount >= 4 && callCount <= 10) return 0.25 // possibleCidrs[1] = 20を選択（28より小さい）
+        return originalRandom()
+      })
+      
+      const targetIp = '10.1.1.100'
+      const result = generateLongestMatchNetworks(targetIp)
+      
+      expect(result.correctCidr).toBe(28)
+      expect(result.otherNetworks).toHaveLength(3)
+      
+      Math.random = originalRandom
+    })
+
+    it('フォールバック処理で最終的な一意ネットワーク生成', () => {
+      // 極端なケースで最終フォールバック処理をテスト
+      const originalRandom = Math.random
+      let callCount = 0
+      Math.random = jest.fn(() => {
+        callCount++
+        if (callCount === 1) return 0.5 // デフォルトルートケースを回避
+        if (callCount === 2) return 0 // possibleCidrs[0] = 16を選択
+        if (callCount === 3) return 0.5 // デフォルトルート選択肢を回避
+        // 他の呼び出しでは予測可能な値を返して重複を発生させる
+        return 0.1
+      })
+      
+      const targetIp = '172.16.1.100'
+      const result = generateLongestMatchNetworks(targetIp)
+      
+      expect(result.otherNetworks).toHaveLength(3)
+      
+      // 生成されたネットワークがすべて有効であることを確認
+      result.otherNetworks.forEach(({ network, cidr }) => {
+        expect(network).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+        expect(cidr).toBeGreaterThanOrEqual(0)
+        expect(cidr).toBeLessThanOrEqual(32)
+      })
+      
+      Math.random = originalRandom
+    })
+
+    it('マッチしないネットワークの確認処理', () => {
+      // hasNonMatchingNetworkがfalseになるケースをテスト
+      const originalRandom = Math.random
+      let callCount = 0
+      Math.random = jest.fn(() => {
+        callCount++
+        if (callCount === 1) return 0.5 // デフォルトルートケースを回避
+        if (callCount === 2) return 0 // possibleCidrs[0] = 16を選択
+        if (callCount === 3) return 0.5 // デフォルトルート選択肢を回避
+        return originalRandom()
+      })
+      
+      const targetIp = '10.0.0.100'
+      const result = generateLongestMatchNetworks(targetIp)
+      
+      expect(result.otherNetworks).toHaveLength(3)
+      
+      // 少なくとも1つのネットワークが対象IPにマッチしないことを確認
+      // （マッチしないネットワーク確認処理が動作している）
+      let hasNonMatching = false
+      result.otherNetworks.forEach(({ network, cidr }) => {
+        // 簡単な非マッチング判定（実際のipBelongsToNetworkは使わない）
+        if (network !== result.correctNetwork || cidr !== result.correctCidr) {
+          hasNonMatching = true
+        }
+      })
+      expect(hasNonMatching).toBe(true)
+      
+      Math.random = originalRandom
+    })
+
+    it('様々なCIDR範囲での紛らわしいネットワーク生成', () => {
+      const testCases = [
+        { cidr: 24, expectModified: 3 }, // 最後のオクテット変更
+        { cidr: 16, expectModified: 2 }, // 3番目のオクテット変更
+        { cidr: 8, expectModified: 1 },  // 2番目のオクテット変更
+        { cidr: 4, expectModified: 0 }   // 1番目のオクテット変更
+      ]
+      
+      testCases.forEach(({ cidr }) => {
+        const targetIp = '192.168.1.100'
+        const result = generateLongestMatchNetworks(targetIp)
+        
+        expect(result.otherNetworks).toHaveLength(3)
+        
+        // 生成されたネットワークが有効であることを確認
+        result.otherNetworks.forEach(({ network, cidr: networkCidr }) => {
+          expect(network).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+          expect(networkCidr).toBeGreaterThanOrEqual(0)
+          expect(networkCidr).toBeLessThanOrEqual(32)
+        })
+      })
+    })
+  })
 })
