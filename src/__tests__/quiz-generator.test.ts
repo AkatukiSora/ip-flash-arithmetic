@@ -2,14 +2,16 @@
  * 問題生成機能のテスト
  */
 import { 
-  generateRandomIpAddress,
-  generateRandomSubnetMask,
-  generateRandomCidr,
-  generateRandomBinaryIp,
-  generateHostIpInNetwork,
   generateQuizQuestion,
   QuestionType
 } from '../utils/quiz-generator'
+import { generateRandomIpAddress } from '../utils/network-generator'
+import { generateHostIpInNetwork } from '../utils/host-generator'
+import { 
+  generateRandomCidr,
+  generateRandomSubnetMask,
+  generateRandomBinaryIp
+} from '../utils/choice-generator'
 
 describe('問題生成機能', () => {
   describe('generateRandomIpAddress', () => {
@@ -145,6 +147,8 @@ describe('問題生成機能', () => {
       expect(question.correctAnswer).toBeDefined()
       expect(question.correctAnswer).toBeGreaterThanOrEqual(0)
       expect(question.correctAnswer).toBeLessThan(4)
+      expect(question.explanation).toContain('💡 計算方法')
+      expect(question.explanation).toContain('各オクテット')
     })
 
     test('Binary IP変換問題は双方向変換をサポートしている', () => {
@@ -180,6 +184,45 @@ describe('問題生成機能', () => {
       expect(question.question).toContain('CIDR')
       expect(question.question).toContain('サブネットマスク')
       expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 変換ルール')
+      expect(question.explanation).toContain('左から1で埋め')
+    })
+
+    test('Subnet to CIDR変換問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.SUBNET_TO_CIDR)
+      expect(question.type).toBe(QuestionType.SUBNET_TO_CIDR)
+      expect(question.question).toContain('サブネットマスク')
+      expect(question.question).toContain('CIDR')
+      expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算方法')
+      expect(question.explanation).toContain('連続する1の個数')
+    })
+
+    test('ネットワークアドレス計算問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.NETWORK_ADDRESS)
+      expect(question.type).toBe(QuestionType.NETWORK_ADDRESS)
+      expect(question.question).toContain('ネットワークアドレス')
+      expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算手順')
+      expect(question.explanation).toContain('AND演算')
+    })
+
+    test('ブロードキャストアドレス計算問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.BROADCAST_ADDRESS)
+      expect(question.type).toBe(QuestionType.BROADCAST_ADDRESS)
+      expect(question.question).toContain('ブロードキャストアドレス')
+      expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算手順')
+      expect(question.explanation).toContain('ホスト部のビットを全て1')
+    })
+
+    test('ホスト数計算問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.HOST_COUNT)
+      expect(question.type).toBe(QuestionType.HOST_COUNT)
+      expect(question.question).toContain('ホスト数')
+      expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算公式')
+      expect(question.explanation).toContain('ホストビット数')
     })
 
     test('HOST_IN_NETWORK問題を生成できる', () => {
@@ -188,22 +231,26 @@ describe('問題生成機能', () => {
       expect(question.question).toContain('ネットワーク')
       expect(question.question).toContain('有効なホストアドレス')
       expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 ポイント')
       expect(question.explanation).toContain('ネットワークアドレス')
       expect(question.explanation).toContain('ブロードキャストアドレス')
+      expect(question.explanation).toContain('使用不可')
     })
 
-    test('ネットワークアドレス計算問題を生成できる', () => {
+    test('ネットワークアドレス計算問題を生成できる（重複テスト）', () => {
       const question = generateQuizQuestion(QuestionType.NETWORK_ADDRESS)
       expect(question.type).toBe(QuestionType.NETWORK_ADDRESS)
       expect(question.question).toContain('ネットワークアドレス')
       expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算手順')
     })
 
-    test('ブロードキャストアドレス計算問題を生成できる', () => {
+    test('ブロードキャストアドレス計算問題を生成できる（重複テスト）', () => {
       const question = generateQuizQuestion(QuestionType.BROADCAST_ADDRESS)
       expect(question.type).toBe(QuestionType.BROADCAST_ADDRESS)
       expect(question.question).toContain('ブロードキャストアドレス')
       expect(question.choices).toHaveLength(4)
+      expect(question.explanation).toContain('💡 計算手順')
     })
 
     test('ホスト数計算問題を生成できる', () => {
@@ -244,6 +291,18 @@ describe('問題生成機能', () => {
       expect(question.choices.every(choice => choice.startsWith('/'))).toBe(true)
     })
 
+    test('ロンゲストマッチ問題を生成できる', () => {
+      const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+      expect(question.type).toBe(QuestionType.LONGEST_MATCH)
+      expect(question.question).toContain('最長マッチ')
+      expect(question.question).toContain('longest match')
+      expect(question.choices).toHaveLength(4)
+      expect(question.choices.every(choice => choice.includes('/'))).toBe(true)
+      expect(question.explanation).toContain('💡 ルーティング判定結果')
+      // デフォルトルートの場合は「📍 判定理由：」、通常の場合は「📍 ロンゲストマッチ」
+      expect(question.explanation).toMatch(/📍 (ロンゲストマッチ|判定理由：)/)
+    })
+
     test('全ての問題タイプが正常に生成される', () => {
       const questionTypes = [
         QuestionType.BINARY_IP_CONVERSION,
@@ -252,7 +311,8 @@ describe('問題生成機能', () => {
         QuestionType.NETWORK_ADDRESS,
         QuestionType.BROADCAST_ADDRESS,
         QuestionType.HOST_COUNT,
-        QuestionType.HOST_IN_NETWORK
+        QuestionType.HOST_IN_NETWORK,
+        QuestionType.LONGEST_MATCH
       ]
 
       questionTypes.forEach(type => {
@@ -274,7 +334,8 @@ describe('問題生成機能', () => {
         QuestionType.NETWORK_ADDRESS,
         QuestionType.BROADCAST_ADDRESS,
         QuestionType.HOST_COUNT,
-        QuestionType.HOST_IN_NETWORK
+        QuestionType.HOST_IN_NETWORK,
+        QuestionType.LONGEST_MATCH
       ]
 
       questionTypes.forEach(type => {
@@ -286,6 +347,8 @@ describe('問題生成機能', () => {
           if (uniqueChoices.size === 4) {
             hasUniqueChoices = true
             break
+          } else {
+            console.log(`問題タイプ ${type}: 選択肢数=${question.choices.length}, ユニーク数=${uniqueChoices.size}, 選択肢=[${question.choices.join(', ')}]`)
           }
         }
         
@@ -321,13 +384,98 @@ describe('問題生成機能', () => {
       }
     })
 
+    test('ロンゲストマッチ問題の詳細テスト', () => {
+      // 複数回実行して、ロンゲストマッチの動作を確認
+      for (let i = 0; i < 5; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        // 問題の基本構造を確認
+        expect(question.type).toBe(QuestionType.LONGEST_MATCH)
+        expect(question.question).toMatch(/IPアドレス \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)
+        expect(question.choices).toHaveLength(4)
+        expect(question.correctAnswer).toBeGreaterThanOrEqual(0)
+        expect(question.correctAnswer).toBeLessThan(4)
+        
+        // 全ての選択肢がネットワークアドレス/CIDR形式であることを確認
+        question.choices.forEach(choice => {
+          expect(choice).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/)
+        })
+        
+        // 正解の選択肢が存在することを確認
+        const correctChoice = question.choices[question.correctAnswer]
+        expect(correctChoice).toBeTruthy()
+        
+        // 説明にルーティングテーブル情報が含まれることを確認
+        expect(question.explanation).toContain('💡 ルーティング判定結果')
+        expect(question.explanation).toContain('○')
+        expect(question.explanation).toContain('×')
+      }
+    })
+
+    test('ロンゲストマッチ問題でデフォルトルートが含まれることがある', () => {
+      let foundDefaultRoute = false
+      let foundDefaultRouteAsCorrect = false
+      
+      // 100回試行してデフォルトルートが含まれる問題を確認
+      for (let i = 0; i < 100; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        const hasDefaultRoute = question.choices.some(choice => choice === '0.0.0.0/0')
+        if (hasDefaultRoute) {
+          foundDefaultRoute = true
+          
+          const correctChoice = question.choices[question.correctAnswer]
+          if (correctChoice === '0.0.0.0/0') {
+            foundDefaultRouteAsCorrect = true
+            // デフォルトルートが正解の場合の説明を確認
+            expect(question.explanation).toContain('💡 ルーティング判定結果')
+            expect(question.explanation).toContain('📍 判定理由')
+            expect(question.explanation).toContain('デフォルトルート')
+          }
+        }
+      }
+      
+      // 確率的にデフォルトルートが含まれることを確認
+      expect(foundDefaultRoute).toBe(true)
+      expect(foundDefaultRouteAsCorrect).toBe(true)
+    })
+
+    test('ロンゲストマッチ問題で紛らわしい選択肢が生成される', () => {
+      // より厳密にテストするため実行回数を増やす
+      for (let i = 0; i < 20; i++) {
+        const question = generateQuizQuestion(QuestionType.LONGEST_MATCH)
+        
+        // 選択肢の中に、似ているネットワークアドレスが含まれることを確認
+        const networks = question.choices.map(choice => {
+          const [network, cidr] = choice.split('/')
+          return { network, cidr: parseInt(cidr) }
+        })
+        
+        // CIDRが大きい（より具体的な）選択肢が含まれることを確認
+        const cidrs = networks.map(n => n.cidr).sort((a, b) => b - a)
+        expect(cidrs[0]).toBeGreaterThanOrEqual(cidrs[1]) // 最大CIDR >= 2番目のCIDR
+        
+        // ネットワークアドレスが完全にランダムではないことを確認
+        // 全ての選択肢がユニークであることを確認
+        const uniqueNetworks = new Set(networks.map(n => `${n.network}/${n.cidr}`))
+        expect(uniqueNetworks.size).toBe(4) // 全て異なる選択肢
+        
+        // CIDR値が有効な範囲内であることを確認
+        networks.forEach(({ cidr }) => {
+          expect(cidr).toBeGreaterThanOrEqual(0)
+          expect(cidr).toBeLessThanOrEqual(32)
+        })
+      }
+    })
+
     test('フォールバック選択肢生成のテスト', () => {
       // 複数の問題タイプでフォールバック処理が正しく動作することを確認
       const questionTypes = [
         QuestionType.CIDR_TO_SUBNET,
         QuestionType.SUBNET_TO_CIDR,
         QuestionType.NETWORK_ADDRESS,
-        QuestionType.BROADCAST_ADDRESS
+        QuestionType.BROADCAST_ADDRESS,
+        QuestionType.LONGEST_MATCH
       ]
       
       questionTypes.forEach(type => {

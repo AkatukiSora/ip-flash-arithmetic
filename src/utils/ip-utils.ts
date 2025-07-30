@@ -82,3 +82,23 @@ export function subnetMaskToCidr(mask: string): number {
   
   return match[1].length
 }
+
+/**
+ * 指定されたIPアドレスがネットワークに属するかどうかを判定する
+ */
+export function ipBelongsToNetwork(ip: string, networkIp: string, cidr: number): boolean {
+  const ipParts = ip.split('.').map(Number)
+  const networkParts = networkIp.split('.').map(Number)
+  
+  // CIDRからサブネットマスクを計算
+  const hostBits = 32 - cidr
+  let mask = 0xFFFFFFFF << hostBits
+  mask = mask >>> 0 // 符号なし32ビット整数に変換
+  
+  // IPアドレスとネットワークアドレスを32ビット整数に変換
+  const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3]
+  const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3]
+  
+  // マスクを適用してネットワーク部を比較
+  return (ipInt & mask) === (networkInt & mask)
+}

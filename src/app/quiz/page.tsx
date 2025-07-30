@@ -13,6 +13,7 @@ const QUESTION_TYPES = [
   { type: QuestionType.BROADCAST_ADDRESS, label: 'ブロードキャスト' },
   { type: QuestionType.HOST_COUNT, label: 'ホスト数計算' },
   { type: QuestionType.HOST_IN_NETWORK, label: 'ホストアドレス選択' },
+  { type: QuestionType.LONGEST_MATCH, label: 'ロンゲストマッチ' },
 ]
 
 type GameMode = 'setup' | 'playing' | 'finished'
@@ -286,7 +287,8 @@ export default function QuizPage() {
                 
                 {currentQuestion.explanation && (
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                    <strong>解説:</strong> {currentQuestion.explanation}
+                    <strong>解説:</strong> 
+                    <div className="mt-2 whitespace-pre-line">{currentQuestion.explanation}</div>
                   </div>
                 )}
 
