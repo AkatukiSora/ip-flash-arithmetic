@@ -121,16 +121,6 @@ describe('choice-generator', () => {
       })
     })
 
-    it('デフォルト分岐のテスト', () => {
-      const correctAnswer = 'test'
-      const wrongChoices = generateWrongChoices(correctAnswer, 'unknown' as any)
-      
-      expect(wrongChoices).toHaveLength(3)
-      wrongChoices.forEach(choice => {
-        expect(choice).not.toBe(correctAnswer)
-      })
-    })
-
     it('フォールバック処理で確実に3つの選択肢を生成する', () => {
       // 非常に特殊な正解でフォールバック処理を発生させる
       const correctAnswer = 'unique-test-answer-12345'

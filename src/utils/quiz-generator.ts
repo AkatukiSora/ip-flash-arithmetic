@@ -7,10 +7,7 @@ import { generateRandomIpAddress } from './network-generator'
 import { generateLongestMatchNetworks, generateLongestMatchExplanation } from './longest-match-generator'
 import { generateHostIpInNetwork } from './host-generator'
 import { 
-  shuffleArray, 
-  generateRandomBinaryIp, 
   generateRandomCidr, 
-  generateRandomSubnetMask, 
   generateWrongChoices,
   generateUniqueSubnetChoices,
   generateUniqueCidrChoices,

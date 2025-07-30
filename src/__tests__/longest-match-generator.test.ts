@@ -3,8 +3,7 @@
  */
 import {
   generateLongestMatchNetworks,
-  generateLongestMatchExplanation,
-  LongestMatchNetworksResult
+  generateLongestMatchExplanation
 } from '../utils/longest-match-generator'
 import { NetworkEntry } from '../utils/network-generator'
 
@@ -31,14 +30,12 @@ describe('longest-match-generator', () => {
 
     it('デフォルトルートが正解の場合を処理する', () => {
       // デフォルトルートが正解になるケースを強制的にテスト
-      let foundDefaultRoute = false
       
       for (let i = 0; i < 20; i++) {
         const targetIp = `10.${i}.${i}.${i}`
         const result = generateLongestMatchNetworks(targetIp)
         
         if (result.correctNetwork === '0.0.0.0' && result.correctCidr === 0) {
-          foundDefaultRoute = true
           
           expect(result.targetIp).toBe(targetIp)
           expect(result.otherNetworks).toHaveLength(3)
@@ -279,7 +276,7 @@ describe('longest-match-generator', () => {
       expect(result.otherNetworks).toHaveLength(3)
       
       // 他の選択肢が対象IPにマッチしないことを確認
-      result.otherNetworks.forEach(({ network, cidr }) => {
+      result.otherNetworks.forEach(({ network }) => {
         // デフォルトルート以外のネットワークは対象IPにマッチしないはず
         if (network !== '0.0.0.0') {
           expect(network).toMatch(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
@@ -405,7 +402,7 @@ describe('longest-match-generator', () => {
         { cidr: 4, expectModified: 0 }   // 1番目のオクテット変更
       ]
       
-      testCases.forEach(({ cidr }) => {
+      testCases.forEach(() => {
         const targetIp = '192.168.1.100'
         const result = generateLongestMatchNetworks(targetIp)
         
